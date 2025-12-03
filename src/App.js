@@ -172,7 +172,7 @@ const TRANSLATIONS = {
     signUp: "Sign Up",
     alreadyHaveAccount: "Already have an account?",
     logout: "Logout",
-    companyTitle: "The Future of Accounting",
+    companyTitle: "Future of Accounting",
     companyDesc: "Macc is the next-generation financial ecosystem replacing legacy desktop software. We combine strict double-entry accounting with the flexibility of the cloud, giving you real-time control over your assets.",
     feature1: "Smart Double-Entry Validation",
     feature2: "Real-time Financial Reporting",
