@@ -67,6 +67,36 @@ const ApiService = {
   }
 };
 
+// --- MOCK DATA (Fixed: Added here to ensure availability) ---
+const ACCOUNTS_DATA = [
+  { id: 1, code: '1', name: 'Assets', nameKey: 'assets', type: 'ASSET', is_group: true, children: [
+    { id: 11, code: '11', name: 'Current Assets', nameKey: 'currentAssets', type: 'ASSET', is_group: true, children: [
+      { id: 111, code: '111', name: 'Cash & Banks', nameKey: 'cashBanks', type: 'ASSET', is_group: true, children: [
+        { id: 1111, code: '1111', name: 'Main Cash Box', nameKey: 'mainCashBox', type: 'ASSET', is_group: false },
+        { id: 1112, code: '1112', name: 'Petty Cash', nameKey: 'pettyCash', type: 'ASSET', is_group: false },
+        { id: 1113, code: '1113', name: 'Bank Al Etihad', nameKey: 'bankEtihad', type: 'ASSET', is_group: false },
+      ]},
+      { id: 112, code: '112', name: 'Accounts Receivable', nameKey: 'accountsReceivable', type: 'ASSET', is_group: false },
+    ]},
+    { id: 12, code: '12', name: 'Fixed Assets', nameKey: 'fixedAssets', type: 'ASSET', is_group: true, children: [
+      { id: 121, code: '121', name: 'Furniture', nameKey: 'furniture', type: 'ASSET', is_group: false },
+      { id: 122, code: '122', name: 'Vehicles', nameKey: 'vehicles', type: 'ASSET', is_group: false },
+    ]}
+  ]},
+  { id: 2, code: '2', name: 'Liabilities', nameKey: 'liabilities', type: 'LIABILITY', is_group: true, children: [
+    { id: 21, code: '21', name: 'Current Liabilities', nameKey: 'currentLiabilities', type: 'LIABILITY', is_group: true, children: [
+      { id: 211, code: '211', name: 'Accounts Payable', nameKey: 'accountsPayable', type: 'LIABILITY', is_group: false },
+    ]}
+  ]},
+  { id: 4, code: '4', name: 'Revenue', nameKey: 'revenue', type: 'REVENUE', is_group: true, children: []},
+  { id: 5, code: '5', name: 'Expenses', nameKey: 'expenses', type: 'EXPENSE', is_group: true, children: [
+     { id: 51, code: '51', name: 'Operating Expenses', nameKey: 'operatingExpenses', type: 'EXPENSE', is_group: true, children: [
+        { id: 511, code: '511', name: 'Rent', nameKey: 'rent', type: 'EXPENSE', is_group: false },
+        { id: 512, code: '512', name: 'Electricity', nameKey: 'electricity', type: 'EXPENSE', is_group: false },
+     ]}
+  ]},
+];
+
 // --- TRANSLATIONS ---
 const TRANSLATIONS = {
   en: {
@@ -142,7 +172,7 @@ const TRANSLATIONS = {
     signUp: "Sign Up",
     alreadyHaveAccount: "Already have an account?",
     logout: "Logout",
-    companyTitle: "Future of Accounting",
+    companyTitle: "The Future of Accounting",
     companyDesc: "Macc is the next-generation financial ecosystem replacing legacy desktop software. We combine strict double-entry accounting with the flexibility of the cloud, giving you real-time control over your assets.",
     feature1: "Smart Double-Entry Validation",
     feature2: "Real-time Financial Reporting",
@@ -278,19 +308,6 @@ const AuthScreen = ({ onLogin, lang, t, setLang }) => {
     setError('');
 
     try {
-      // Uncomment to use real backend:
-      /*
-      let user;
-      if (isLogin) {
-        const result = await ApiService.login(formData.email, formData.password);
-        user = result.user;
-      } else {
-        const result = await ApiService.register(formData.name, formData.email, formData.password);
-        user = { name: result.full_name, role: result.role };
-      }
-      onLogin(user);
-      */
-
       // Simulation
       await new Promise(resolve => setTimeout(resolve, 1500));
       onLogin({
@@ -406,7 +423,270 @@ const AuthScreen = ({ onLogin, lang, t, setLang }) => {
   );
 };
 
-// --- MAIN APP SHELL ---
+// --- VIEW 1: DASHBOARD ---
+const Dashboard = ({ t }) => {
+  return (
+    <div className="max-w-6xl mx-auto space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Metric Cards */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('totalAssets')}</p>
+          <div className="flex items-end justify-between mt-2">
+            <h3 className="text-2xl font-bold text-slate-800" dir="ltr">$1,240,500</h3>
+            <span className="text-xs font-bold text-green-600 flex items-center bg-green-50 px-2 py-1 rounded" dir="ltr">
+              <TrendingUp size={14} className="me-1" /> +12%
+            </span>
+          </div>
+        </div>
+        
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('totalLiabilities')}</p>
+          <div className="flex items-end justify-between mt-2">
+            <h3 className="text-2xl font-bold text-slate-800" dir="ltr">$420,100</h3>
+            <span className="text-xs font-bold text-red-500 flex items-center bg-red-50 px-2 py-1 rounded" dir="ltr">
+              <TrendingDown size={14} className="me-1" /> +2%
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('netProfit')}</p>
+          <div className="flex items-end justify-between mt-2">
+            <h3 className="text-2xl font-bold text-slate-800" dir="ltr">$185,400</h3>
+            <span className="text-xs font-bold text-green-600 flex items-center bg-green-50 px-2 py-1 rounded" dir="ltr">
+              <TrendingUp size={14} className="me-1" /> +8%
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('cashOnHand')}</p>
+          <div className="flex items-end justify-between mt-2">
+            <h3 className="text-2xl font-bold text-slate-800" dir="ltr">$54,200</h3>
+            <span className="text-xs text-slate-400">{t('updatedToday')}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Activity Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+          <h3 className="font-bold text-slate-800">{t('recentTransactions')}</h3>
+          <button className="text-sm text-blue-600 font-medium hover:underline">{t('viewAll')}</button>
+        </div>
+        <table className="w-full text-start text-sm">
+          <thead className="bg-slate-50 text-slate-500 font-medium">
+            <tr>
+              <th className="px-6 py-3 text-start">{t('date')}</th>
+              <th className="px-6 py-3 text-start">{t('description')}</th>
+              <th className="px-6 py-3 text-start">{t('ref')}</th>
+              <th className="px-6 py-3 text-end">{t('amount')}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <tr key={i} className="hover:bg-slate-50/50">
+                <td className="px-6 py-3 text-slate-600" dir="ltr">Nov {20 + i}, 2025</td>
+                <td className="px-6 py-3 font-medium text-slate-800">{t('salesInvoice')} #{1020 + i}</td>
+                <td className="px-6 py-3 text-slate-500" dir="ltr">INV-{1020+i}</td>
+                <td className="px-6 py-3 text-end font-mono text-slate-700" dir="ltr">$1,250.00</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// --- VIEW 2: CHART OF ACCOUNTS (TREE) ---
+const TreeNode = ({ node, level = 0, lang, t }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const hasChildren = node.children && node.children.length > 0;
+  
+  // Choose icon based on direction
+  const ArrowIcon = lang === 'ar' 
+    ? (isOpen ? ChevronDown : ChevronLeft)
+    : (isOpen ? ChevronDown : ChevronRight);
+
+  return (
+    <div>
+      <div 
+        className={`flex items-center py-2 px-3 hover:bg-blue-50 cursor-pointer border-b border-slate-50 transition-colors`}
+        style={{ paddingInlineStart: `${level * 24 + 12}px` }} // Logical padding for indentation
+        onClick={() => hasChildren && setIsOpen(!isOpen)}
+      >
+        <div className="me-2 text-slate-400">
+          {hasChildren ? <ArrowIcon size={14} /> : <div className="w-[14px]" />}
+        </div>
+        
+        <div className="me-3 text-blue-500">
+          {node.is_group ? (isOpen ? <FolderOpen size={18} /> : <Folder size={18} />) : <File size={16} className="text-slate-400" />}
+        </div>
+        
+        <div className="flex-1 flex items-center justify-between">
+            <div>
+                <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded me-3" dir="ltr">{node.code}</span>
+                <span className={`text-sm ${node.is_group ? 'font-bold text-slate-700' : 'text-slate-600'}`}>{t(node.nameKey) || node.name}</span>
+            </div>
+            {!node.is_group && (
+                <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{node.type}</span>
+            )}
+        </div>
+      </div>
+      {isOpen && hasChildren && (
+        <div className={`border-s border-slate-100 ${lang === 'ar' ? 'mr-[23px]' : 'ml-[23px]'}`}>
+          {node.children.map(child => <TreeNode key={child.id} node={child} level={level + 1} lang={lang} t={t} />)}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const AccountTree = ({ t, lang, data }) => {
+  return (
+    <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+        <h3 className="font-bold text-slate-800">{t('chartOfAccounts')}</h3>
+        <button className="flex items-center gap-2 text-xs font-bold bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors">
+            <Plus size={14} /> {t('newAccount')}
+        </button>
+      </div>
+      <div className="py-2">
+        {data.map(node => <TreeNode key={node.id} node={node} lang={lang} t={t} />)}
+      </div>
+    </div>
+  );
+};
+
+// --- VIEW 3: JOURNAL ENTRY ---
+const JournalEntry = ({ isDemoMode, t, lang }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notification, setNotification] = useState({ type: '', message: '' });
+  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
+  const [reference, setReference] = useState('');
+  const [entryNumber, setEntryNumber] = useState('JE-2025-0042');
+  const [rows, setRows] = useState([
+    { id: 1, account_id: '511', description: t('officeRent'), debit: 1500.00, credit: 0 },
+    { id: 2, account_id: '1111', description: t('officeRent'), debit: 0, credit: 1500.00 },
+  ]);
+
+  const totalDebit = rows.reduce((sum, row) => sum + Number(row.debit || 0), 0);
+  const totalCredit = rows.reduce((sum, row) => sum + Number(row.credit || 0), 0);
+  const diff = totalDebit - totalCredit;
+  const isBalanced = Math.abs(diff) < 0.01;
+
+  const addRow = () => setRows([...rows, { id: Date.now(), account_id: '', description: '', debit: 0, credit: 0 }]);
+  
+  const updateRow = (id, field, value) => {
+    setRows(rows.map(row => {
+      if (row.id === id) {
+        const newRow = { ...row, [field]: value };
+        if (field === 'debit' && Number(value) > 0) newRow.credit = 0;
+        if (field === 'credit' && Number(value) > 0) newRow.debit = 0;
+        return newRow;
+      }
+      return row;
+    }));
+  };
+
+  const removeRow = (id) => {
+    if (rows.length > 2) setRows(rows.filter(row => row.id !== id));
+  };
+
+  const handleSave = async () => {
+    setIsSubmitting(true);
+    await new Promise(resolve => setTimeout(resolve, 1500)); 
+    setIsSubmitting(false);
+    setNotification({ type: 'success', message: t('successMessage') });
+    setTimeout(() => setNotification({ type: '', message: '' }), 3000);
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      <Notification type={notification.type} message={notification.message} />
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('entryNumber')}</label>
+            <input type="text" value={entryNumber} readOnly className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-700 font-mono text-sm font-semibold" dir="ltr" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('date')}</label>
+            <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('reference')}</label>
+            <input type="text" value={reference} onChange={(e) => setReference(e.target.value)} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-slate-700 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Inv-1023" />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+        <div className="overflow-x-auto">
+          <table className="w-full text-start border-collapse min-w-[800px]">
+            <thead>
+              <tr className="bg-slate-50 text-slate-500 text-xs uppercase font-bold border-b border-slate-200">
+                <th className="px-4 py-3 w-[15%] text-start">{t('accountCode')}</th>
+                <th className="px-4 py-3 w-[40%] text-start">{t('description')}</th>
+                <th className="px-4 py-3 text-end w-[20%]">{t('debit')}</th>
+                <th className="px-4 py-3 text-end w-[20%]">{t('credit')}</th>
+                <th className="px-2 py-3 w-[5%]"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.map((row) => (
+                <tr key={row.id} className="hover:bg-blue-50/50 group transition-colors">
+                  <td className="p-2">
+                    <input type="text" placeholder={t('searchPlaceholder')} className="w-full bg-transparent border border-transparent hover:border-slate-200 focus:bg-white focus:border-blue-500 rounded px-2 py-1.5 outline-none text-sm font-mono text-blue-800 font-medium" value={row.account_id} onChange={(e) => updateRow(row.id, 'account_id', e.target.value)} dir="ltr" />
+                  </td>
+                  <td className="p-2">
+                    <input type="text" className="w-full bg-transparent border border-transparent hover:border-slate-200 focus:bg-white focus:border-blue-500 rounded px-2 py-1.5 outline-none text-sm" value={row.description} onChange={(e) => updateRow(row.id, 'description', e.target.value)} />
+                  </td>
+                  <td className="p-2">
+                    <input type="number" className="w-full text-end bg-transparent border border-transparent hover:border-slate-200 focus:bg-white focus:border-blue-500 rounded px-2 py-1.5 outline-none text-sm font-mono text-slate-700 placeholder-slate-200" value={row.debit || ''} placeholder="0.00" onChange={(e) => updateRow(row.id, 'debit', e.target.value)} dir="ltr" />
+                  </td>
+                  <td className="p-2">
+                    <input type="number" className="w-full text-end bg-transparent border border-transparent hover:border-slate-200 focus:bg-white focus:border-blue-500 rounded px-2 py-1.5 outline-none text-sm font-mono text-slate-700 placeholder-slate-200" value={row.credit || ''} placeholder="0.00" onChange={(e) => updateRow(row.id, 'credit', e.target.value)} dir="ltr" />
+                  </td>
+                  <td className="p-2 text-center">
+                    <button onClick={() => removeRow(row.id)} className="text-slate-300 hover:text-red-500 p-1 rounded hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="bg-slate-50 border-t border-slate-200">
+              <tr>
+                <td colSpan={2} className="px-4 py-3">
+                  <button onClick={addRow} className="flex items-center gap-2 text-sm text-blue-600 font-bold hover:text-blue-800 transition-colors px-2 py-1 rounded hover:bg-blue-100/50"><Plus size={16} /> {t('addLine')}</button>
+                </td>
+                <td className={`px-4 py-3 text-end font-mono font-bold text-sm border-t-2 ${!isBalanced ? 'border-red-300 text-red-600 bg-red-50' : 'border-slate-300 text-slate-800'}`} dir="ltr">{totalDebit.toFixed(2)}</td>
+                <td className={`px-4 py-3 text-end font-mono font-bold text-sm border-t-2 ${!isBalanced ? 'border-red-300 text-red-600 bg-red-50' : 'border-slate-300 text-slate-800'}`} dir="ltr">{totalCredit.toFixed(2)}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div className="mt-8 flex items-center justify-between">
+         <div className="flex items-center gap-4">
+           {!isBalanced && <div className="text-red-600 text-sm font-bold flex items-center gap-2 bg-red-50 px-4 py-2 rounded-lg border border-red-100"><AlertCircle size={16} /> {t('difference')}: <span dir="ltr">{diff.toFixed(2)}</span></div>}
+           {isBalanced && <div className="text-green-600 text-sm font-bold flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg border border-green-100"><CheckCircle size={16} /> {t('balanced')}</div>}
+         </div>
+         <div className="flex items-center gap-3">
+           <button className="px-6 py-2.5 rounded-lg text-slate-600 font-medium hover:bg-slate-200 transition-colors text-sm">{t('draft')}</button>
+           <button onClick={handleSave} disabled={!isBalanced || totalDebit === 0 || isSubmitting} className={`px-6 py-2.5 rounded-lg text-white font-medium flex items-center gap-2 shadow-sm transition-all text-sm ${isBalanced && totalDebit > 0 && !isSubmitting ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-300 cursor-not-allowed'}`}>
+             {isSubmitting ? <Loader size={18} className="animate-spin" /> : <Save size={18} />} {isSubmitting ? t('posting') : t('postEntry')}
+           </button>
+         </div>
+      </div>
+    </div>
+  );
+};
+
+// --- APP SHELL ---
+
 export default function App() {
   const [activeView, setActiveView] = useState('dashboard');
   const [isDemoMode, setIsDemoMode] = useState(true);
@@ -532,34 +812,3 @@ export default function App() {
     </div>
   );
 }
-
-// --- MOCK DATA (unchanged) ---
-// Note: Keeping this at bottom to keep code clean, same data structure as before
-const ACCOUNTS_DATA = [
-  { id: 1, code: '1', name: 'Assets', nameKey: 'assets', type: 'ASSET', is_group: true, children: [
-    { id: 11, code: '11', name: 'Current Assets', nameKey: 'currentAssets', type: 'ASSET', is_group: true, children: [
-      { id: 111, code: '111', name: 'Cash & Banks', nameKey: 'cashBanks', type: 'ASSET', is_group: true, children: [
-        { id: 1111, code: '1111', name: 'Main Cash Box', nameKey: 'mainCashBox', type: 'ASSET', is_group: false },
-        { id: 1112, code: '1112', name: 'Petty Cash', nameKey: 'pettyCash', type: 'ASSET', is_group: false },
-        { id: 1113, code: '1113', name: 'Bank Al Etihad', nameKey: 'bankEtihad', type: 'ASSET', is_group: false },
-      ]},
-      { id: 112, code: '112', name: 'Accounts Receivable', nameKey: 'accountsReceivable', type: 'ASSET', is_group: false },
-    ]},
-    { id: 12, code: '12', name: 'Fixed Assets', nameKey: 'fixedAssets', type: 'ASSET', is_group: true, children: [
-      { id: 121, code: '121', name: 'Furniture', nameKey: 'furniture', type: 'ASSET', is_group: false },
-      { id: 122, code: '122', name: 'Vehicles', nameKey: 'vehicles', type: 'ASSET', is_group: false },
-    ]}
-  ]},
-  { id: 2, code: '2', name: 'Liabilities', nameKey: 'liabilities', type: 'LIABILITY', is_group: true, children: [
-    { id: 21, code: '21', name: 'Current Liabilities', nameKey: 'currentLiabilities', type: 'LIABILITY', is_group: true, children: [
-      { id: 211, code: '211', name: 'Accounts Payable', nameKey: 'accountsPayable', type: 'LIABILITY', is_group: false },
-    ]}
-  ]},
-  { id: 4, code: '4', name: 'Revenue', nameKey: 'revenue', type: 'REVENUE', is_group: true, children: []},
-  { id: 5, code: '5', name: 'Expenses', nameKey: 'expenses', type: 'EXPENSE', is_group: true, children: [
-     { id: 51, code: '51', name: 'Operating Expenses', nameKey: 'operatingExpenses', type: 'EXPENSE', is_group: true, children: [
-        { id: 511, code: '511', name: 'Rent', nameKey: 'rent', type: 'EXPENSE', is_group: false },
-        { id: 512, code: '512', name: 'Electricity', nameKey: 'electricity', type: 'EXPENSE', is_group: false },
-     ]}
-  ]},
-];
