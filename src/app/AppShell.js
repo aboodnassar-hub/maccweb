@@ -5,7 +5,9 @@ import AuthScreen from '../features/auth/AuthScreen';
 import Dashboard from '../features/dashboard/Dashboard';
 import AccountingWorkspace from '../features/accounting/AccountingWorkspace';
 import ModuleWorkspace from '../features/modules/ModuleWorkspace';
+import SystemAdminPortal from '../features/systemAdmin/SystemAdminPortal';
 import { useI18n } from '../i18n/I18nProvider';
+import { ApiClient } from '../services/api';
 
 function SidebarItem({ item, activeModule, onSelect }) {
   const { t } = useI18n();
@@ -60,7 +62,7 @@ function Sidebar({ activeModule, onSelect, onClose }) {
 
 export default function AppShell() {
   const { dir, language, t, toggleLanguage } = useI18n();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => ApiClient.getSession());
   const [activeModule, setActiveModule] = useState('dashboard');
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -71,6 +73,15 @@ export default function AppShell() {
 
   if (!user) {
     return <AuthScreen onAuthenticated={setUser} />;
+  }
+
+  const handleLogout = () => {
+    ApiClient.clearSession();
+    setUser(null);
+  };
+
+  if (user.permissions?.includes('system.admin')) {
+    return <SystemAdminPortal user={user} onLogout={handleLogout} />;
   }
 
   const selectModule = (moduleId) => {
@@ -104,7 +115,7 @@ export default function AppShell() {
               {activeModule === 'dashboard' ? t('dashboard.title') : t(activeItem?.labelKey || 'nav.dashboard')}
             </h1>
             <p className="hidden text-xs font-semibold text-slate-500 sm:block">
-              {t('app.company')} · {t('app.financialYear')} · {t('app.demo')}
+              {t('app.company')} · {t('app.financialYear')} · {ApiClient.baseUrl}
             </p>
           </div>
 
@@ -127,7 +138,7 @@ export default function AppShell() {
           <button
             type="button"
             title={t('app.logout')}
-            onClick={() => setUser(null)}
+            onClick={handleLogout}
             className="grid h-10 w-10 place-items-center rounded-md bg-slate-950 text-sm font-black text-white"
           >
             {language === 'ar' ? <LogOut size={18} /> : user.name.charAt(0)}
@@ -135,9 +146,9 @@ export default function AppShell() {
         </header>
 
         <main className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
-          {activeModule === 'dashboard' && <Dashboard />}
-          {activeModule === 'accounting' && <AccountingWorkspace />}
-          {!['dashboard', 'accounting'].includes(activeModule) && <ModuleWorkspace moduleId={activeModule} />}
+          {activeModule === 'dashboard' && <Dashboard token={user.token} />}
+          {activeModule === 'accounting' && <AccountingWorkspace token={user.token} />}
+          {!['dashboard', 'accounting'].includes(activeModule) && <ModuleWorkspace moduleId={activeModule} token={user.token} />}
         </main>
       </div>
     </div>

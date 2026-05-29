@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
-import { Building2, Globe2, Lock, Mail, ShieldCheck, User } from 'lucide-react';
+import { Globe2, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { ApiClient } from '../../services/api';
 import { useI18n } from '../../i18n/I18nProvider';
 
 export default function AuthScreen({ onAuthenticated }) {
   const { language, t, toggleLanguage } = useI18n();
-  const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    fullName: '',
-    companyCode: 'MAIN',
-    email: 'admin@macc.local',
-    password: 'admin123',
+    email: '',
+    password: '',
   });
 
   const updateField = (field, value) => {
@@ -25,24 +22,8 @@ export default function AuthScreen({ onAuthenticated }) {
     setError('');
 
     try {
-      let profile;
-      if (process.env.REACT_APP_USE_API === 'true') {
-        const response = isLogin
-          ? await ApiClient.login(formData.email, formData.password)
-          : await ApiClient.register(formData);
-        profile = {
-          name: response.user.full_name,
-          role: response.user.roles?.[0] || 'head_accountant',
-          token: response.access_token,
-        };
-      } else {
-        await new Promise((resolve) => setTimeout(resolve, 450));
-        profile = {
-          name: isLogin ? 'Admin User' : formData.fullName || 'Admin User',
-          role: t('auth.role'),
-          token: 'demo-token',
-        };
-      }
+      const response = await ApiClient.login(formData.email, formData.password);
+      const profile = ApiClient.saveSession(response);
       onAuthenticated(profile);
     } catch (err) {
       setError(err.message);
@@ -65,14 +46,14 @@ export default function AuthScreen({ onAuthenticated }) {
             </div>
 
             <div className="mt-16 max-w-2xl">
-              <p className="text-sm font-semibold uppercase tracking-widest text-emerald-300">{t('app.company')}</p>
-              <h1 className="mt-4 text-4xl font-black leading-tight tracking-normal">{t('dashboard.title')}</h1>
-              <p className="mt-5 text-base leading-7 text-slate-300">{t('auth.securityNote')}</p>
+              <p className="text-sm font-semibold uppercase tracking-widest text-emerald-300">{t('auth.systemAdminPortal')}</p>
+              <h1 className="mt-4 text-4xl font-black leading-tight tracking-normal">{t('auth.welcome')}</h1>
+              <p className="mt-5 text-base leading-7 text-slate-300">{t('auth.adminPortalNote')}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3 text-sm">
-            {['nav.accounting', 'nav.inventory', 'nav.reports'].map((key) => (
+            {['auth.companyControl', 'auth.accountMonitoring', 'auth.secureAccess'].map((key) => (
               <div key={key} className="rounded-lg border border-white/10 bg-white/5 p-4">
                 <ShieldCheck className="mb-3 text-emerald-300" size={20} />
                 <p className="font-semibold">{t(key)}</p>
@@ -86,7 +67,7 @@ export default function AuthScreen({ onAuthenticated }) {
             <div className="mb-8 flex items-center justify-between">
               <div className="lg:hidden">
                 <p className="text-2xl font-black text-slate-950">{t('app.name')}</p>
-                <p className="text-sm text-slate-500">{t('app.subtitle')}</p>
+                <p className="text-sm text-slate-500">{t('auth.systemAdminPortal')}</p>
               </div>
               <button
                 type="button"
@@ -100,8 +81,8 @@ export default function AuthScreen({ onAuthenticated }) {
             </div>
 
             <div className="mb-6">
-              <h2 className="text-2xl font-black tracking-normal text-slate-950">{isLogin ? t('auth.welcome') : t('auth.create')}</h2>
-              <p className="mt-2 text-sm text-slate-500">{t('auth.continue')}</p>
+              <h2 className="text-2xl font-black tracking-normal text-slate-950">{t('auth.signIn')}</h2>
+              <p className="mt-2 text-sm text-slate-500">{t('auth.noPublicSignup')}</p>
             </div>
 
             {error && (
@@ -111,34 +92,6 @@ export default function AuthScreen({ onAuthenticated }) {
             )}
 
             <form className="space-y-4" onSubmit={handleSubmit}>
-              {!isLogin && (
-                <label className="block">
-                  <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">{t('auth.fullName')}</span>
-                  <span className="relative block">
-                    <User className="absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input
-                      required={!isLogin}
-                      value={formData.fullName}
-                      onChange={(event) => updateField('fullName', event.target.value)}
-                      className="h-11 w-full rounded-md border border-slate-300 bg-white ps-10 pe-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    />
-                  </span>
-                </label>
-              )}
-
-              <label className="block">
-                <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">{t('auth.tenant')}</span>
-                <span className="relative block">
-                  <Building2 className="absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input
-                    value={formData.companyCode}
-                    onChange={(event) => updateField('companyCode', event.target.value.toUpperCase())}
-                    className="h-11 w-full rounded-md border border-slate-300 bg-white ps-10 pe-3 text-sm font-semibold uppercase outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    dir="ltr"
-                  />
-                </span>
-              </label>
-
               <label className="block">
                 <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">{t('auth.email')}</span>
                 <span className="relative block">
@@ -175,17 +128,9 @@ export default function AuthScreen({ onAuthenticated }) {
                 disabled={isLoading}
                 className="h-11 w-full rounded-md bg-slate-950 px-4 text-sm font-bold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
               >
-                {isLoading ? t('auth.signingIn') : isLogin ? t('auth.signIn') : t('auth.signUp')}
+                {isLoading ? t('auth.signingIn') : t('auth.signIn')}
               </button>
             </form>
-
-            <button
-              type="button"
-              onClick={() => setIsLogin((current) => !current)}
-              className="mt-5 w-full rounded-md px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
-            >
-              {isLogin ? t('auth.switchToRegister') : t('auth.switchToLogin')}
-            </button>
           </div>
         </section>
       </div>

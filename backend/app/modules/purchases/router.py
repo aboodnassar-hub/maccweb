@@ -11,13 +11,13 @@ router = APIRouter()
 
 
 @router.get("/invoices")
-def list_invoices(
+def list_purchase_invoices(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permissions("accounting.read")),
 ) -> list[dict]:
     rows = (
         db.query(Invoice)
-        .filter(Invoice.company_id == current_user.company_id, Invoice.invoice_type == "SALES")
+        .filter(Invoice.company_id == current_user.company_id, Invoice.invoice_type == "PURCHASE")
         .order_by(Invoice.invoice_date.desc(), Invoice.id.desc())
         .limit(100)
         .all()

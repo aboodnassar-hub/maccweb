@@ -24,10 +24,12 @@ DEFAULT_ROLES = [
         "head_accountant",
         "Head Accountant",
         "رئيس الحسابات",
-        ["accounting.read", "accounting.write", "inventory.read", "sales.write", "reports.read"],
+        ["accounting.read", "accounting.write", "inventory.read", "sales.write", "hr.write", "reports.read"],
     ),
     ("viewer", "Viewer", "مستعرض", ["accounting.read", "inventory.read", "reports.read"]),
 ]
+
+LEGACY_SYSTEM_ADMIN_EMAILS = {"aboodnassar68@gmail.com", "aboodnassar68@gmai.com"}
 
 
 def ensure_default_roles(db: Session) -> None:
@@ -105,9 +107,50 @@ def register_user(db: Session, payload: UserCreate) -> TokenResponse:
     return issue_token(user)
 
 
+def ensure_system_admin(db: Session, company: Company) -> None:
+    settings = get_settings()
+    if not settings.system_admin_password:
+        return
+
+    ensure_default_roles(db)
+    admin_role = db.query(Role).filter(Role.code == "admin").first()
+    user = db.query(User).filter(User.email == settings.system_admin_email).first()
+    if not user:
+        legacy_emails = [email for email in LEGACY_SYSTEM_ADMIN_EMAILS if email != settings.system_admin_email]
+        user = db.query(User).filter(User.email.in_(legacy_emails)).first() if legacy_emails else None
+        if user:
+            user.email = settings.system_admin_email
+
+    if not user:
+        user = User(
+            company_id=company.id,
+            full_name=settings.system_admin_full_name,
+            email=settings.system_admin_email,
+            hashed_password=hash_password(settings.system_admin_password),
+            roles=[admin_role] if admin_role else [],
+            is_active=True,
+        )
+        db.add(user)
+    else:
+        user.company_id = company.id
+        user.full_name = settings.system_admin_full_name
+        user.is_active = True
+        if admin_role and admin_role not in user.roles:
+            user.roles.append(admin_role)
+        if settings.reset_system_admin_password:
+            user.hashed_password = hash_password(settings.system_admin_password)
+
+    db.commit()
+
+
 def authenticate_user(db: Session, payload: LoginRequest) -> TokenResponse | None:
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not verify_password(payload.password, user.hashed_password):
+        return None
+    if not user.is_active:
+        return None
+    company = db.get(Company, user.company_id)
+    if not company or not company.is_active:
         return None
     return issue_token(user)
 

@@ -1,10 +1,37 @@
-import React, { useMemo, useState } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, File, Folder, FolderOpen, Plus, Search } from 'lucide-react';
-import { accountTree } from '../../data/erpData';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertCircle, ChevronDown, ChevronLeft, ChevronRight, File, Folder, FolderOpen, Plus, Search } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
+import { ApiClient } from '../../services/api';
+
+function buildAccountTree(accounts) {
+  const nodes = accounts.map((account) => ({
+    ...account,
+    isGroup: account.is_group,
+    name: { en: account.name_en, ar: account.name_ar },
+    children: [],
+  }));
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const roots = [];
+
+  nodes.forEach((node) => {
+    if (node.parent_id && byId.has(node.parent_id)) {
+      byId.get(node.parent_id).children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+
+  return roots;
+}
 
 function flatten(nodes) {
   return nodes.flatMap((node) => [node, ...(node.children ? flatten(node.children) : [])]);
+}
+
+function nodeMatches(node, query, localize) {
+  if (!query) return true;
+  const ownMatch = `${node.code} ${localize(node.name)}`.toLowerCase().includes(query.toLowerCase());
+  return ownMatch || node.children?.some((child) => nodeMatches(child, query, localize));
 }
 
 function AccountNode({ node, depth = 0, query }) {
@@ -14,7 +41,7 @@ function AccountNode({ node, depth = 0, query }) {
   const matches = `${node.code} ${localize(node.name)}`.toLowerCase().includes(query.toLowerCase());
   const Arrow = open ? ChevronDown : dir === 'rtl' ? ChevronLeft : ChevronRight;
 
-  if (query && !matches && !hasChildren) {
+  if (!nodeMatches(node, query, localize)) {
     return null;
   }
 
@@ -35,7 +62,7 @@ function AccountNode({ node, depth = 0, query }) {
         <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
           {node.isGroup ? t('accounting.group') : t('accounting.leaf')}
         </span>
-        <span className="hidden rounded-md bg-white px-2 py-1 text-xs font-bold text-slate-500 ring-1 ring-slate-200 sm:inline">{node.type}</span>
+        <span className="hidden rounded-md bg-white px-2 py-1 text-xs font-bold text-slate-500 ring-1 ring-slate-200 sm:inline">{node.account_type}</span>
       </button>
 
       {open && hasChildren && node.children.map((child) => (
@@ -45,10 +72,35 @@ function AccountNode({ node, depth = 0, query }) {
   );
 }
 
-export default function ChartOfAccounts() {
+export default function ChartOfAccounts({ token }) {
   const { t } = useI18n();
   const [query, setQuery] = useState('');
-  const count = useMemo(() => flatten(accountTree).length, []);
+  const [accounts, setAccounts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const accountTree = useMemo(() => buildAccountTree(accounts), [accounts]);
+  const count = useMemo(() => flatten(accountTree).length, [accountTree]);
+
+  useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    setError('');
+
+    ApiClient.accounts(token)
+      .then((payload) => {
+        if (active) setAccounts(payload);
+      })
+      .catch((err) => {
+        if (active) setError(err.message);
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white">
@@ -74,11 +126,21 @@ export default function ChartOfAccounts() {
         </div>
       </div>
 
-      <div className="max-h-[560px] overflow-y-auto">
-        {accountTree.map((node) => (
-          <AccountNode key={node.id} node={node} query={query} />
-        ))}
-      </div>
+      {isLoading && <div className="p-5 text-sm font-bold text-slate-500">{t('common.loading', 'Loading live data...')}</div>}
+      {error && (
+        <div className="flex items-center gap-2 p-5 text-sm font-bold text-rose-700">
+          <AlertCircle size={18} />
+          {error}
+        </div>
+      )}
+      {!isLoading && !error && (
+        <div className="max-h-[560px] overflow-y-auto">
+          {accountTree.length === 0 && <div className="p-5 text-sm font-semibold text-slate-500">{t('common.empty', 'No records yet')}</div>}
+          {accountTree.map((node) => (
+            <AccountNode key={node.id} node={node} query={query} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

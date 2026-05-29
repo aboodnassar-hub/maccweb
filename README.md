@@ -38,12 +38,17 @@ npm install
 npm start
 ```
 
-The React app runs on [http://localhost:3000](http://localhost:3000). By default the login uses local demo mode. To connect it to the backend auth API, start the backend and run the frontend with:
+The React app runs on [http://localhost:3000](http://localhost:3000). It uses the API configured by `REACT_APP_API_URL`.
 
 ```powershell
-$env:REACT_APP_USE_API="true"
-$env:REACT_APP_API_URL="http://127.0.0.1:8000/api/v1"
+$env:REACT_APP_API_URL="https://maccweb.onrender.com/api/v1"
 npm start
+```
+
+For Vercel production, set:
+
+```bash
+REACT_APP_API_URL=https://maccweb.onrender.com/api/v1
 ```
 
 ## Backend Environment
@@ -54,8 +59,10 @@ Required for production:
 $env:MACC_DATABASE_URL="postgresql://user:password@host:5432/database"
 $env:MACC_SECRET_KEY="replace-with-a-long-random-secret"
 $env:MACC_ENV="production"
-$env:MACC_ALLOWED_ORIGINS="https://your-frontend-domain.example"
+$env:MACC_ALLOWED_ORIGINS="https://maccweb.vercel.app"
 $env:MACC_AUTO_CREATE_TABLES="false"
+$env:MACC_SYSTEM_ADMIN_EMAIL="abdelrahmanassar01@gmail.com"
+$env:MACC_SYSTEM_ADMIN_PASSWORD="set-the-initial-system-admin-password"
 ```
 
 Optional:
@@ -65,9 +72,21 @@ $env:MACC_API_PREFIX="/api/v1"
 $env:MACC_APP_NAME="Macc ERP API"
 $env:MACC_ACCESS_TOKEN_EXPIRE_MINUTES="720"
 $env:MACC_DEFAULT_COMPANY_CODE="MAIN"
+$env:MACC_ENABLE_LOCAL_CORS="true"
+$env:MACC_SYSTEM_ADMIN_FULL_NAME="System Admin"
+$env:MACC_RESET_SYSTEM_ADMIN_PASSWORD="false"
 ```
 
 Render may expose the database URL as `DATABASE_URL`; the backend accepts that too. If Render provides a `postgres://` URL, the backend normalizes it to `postgresql://`.
+
+CORS behavior:
+
+- Production defaults to `https://maccweb.vercel.app`.
+- Development and testing environments automatically allow `http://localhost:3000` and `http://127.0.0.1:3000`.
+- To temporarily test a deployed backend from a local React dev server, set `MACC_ENABLE_LOCAL_CORS=true` on that backend service.
+- Additional testing origins can be appended with `MACC_EXTRA_CORS_ORIGINS`.
+
+Public account registration is disabled. New company accounts and their first admin user are created from the System Admin portal. The seed command creates the System Admin login only when `MACC_SYSTEM_ADMIN_PASSWORD` is set.
 
 ## Backend Local Development
 

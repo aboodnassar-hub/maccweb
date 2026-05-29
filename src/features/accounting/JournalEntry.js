@@ -1,20 +1,53 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, Plus, Save, Trash2 } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
+import { ApiClient } from '../../services/api';
 
-const initialRows = [
-  { id: 1, accountCode: '511', description: 'Office rent', debit: 1500, credit: 0 },
-  { id: 2, accountCode: '1111', description: 'Office rent', debit: 0, credit: 1500 },
+function newEntryNumber() {
+  return `JE-${Date.now()}`;
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+const blankRows = [
+  { id: 1, account_id: '', description: '', debit: 0, credit: 0 },
+  { id: 2, account_id: '', description: '', debit: 0, credit: 0 },
 ];
 
-export default function JournalEntry() {
-  const { t } = useI18n();
-  const [entryNumber] = useState('JE-2026-0062');
-  const [entryDate, setEntryDate] = useState('2026-05-28');
-  const [reference, setReference] = useState('RENT-MAY');
-  const [rows, setRows] = useState(initialRows);
+export default function JournalEntry({ token }) {
+  const { language, t } = useI18n();
+  const [accounts, setAccounts] = useState([]);
+  const [entryNumber, setEntryNumber] = useState(newEntryNumber());
+  const [entryDate, setEntryDate] = useState(today());
+  const [reference, setReference] = useState('');
+  const [rows, setRows] = useState(blankRows);
   const [saving, setSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    setError('');
+
+    ApiClient.accounts(token)
+      .then((payload) => {
+        if (active) setAccounts(payload.filter((account) => !account.is_group));
+      })
+      .catch((err) => {
+        if (active) setError(err.message);
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
 
   const totals = useMemo(() => {
     const debit = rows.reduce((sum, row) => sum + Number(row.debit || 0), 0);
@@ -33,7 +66,7 @@ export default function JournalEntry() {
   };
 
   const addRow = () => {
-    setRows((current) => [...current, { id: Date.now(), accountCode: '', description: '', debit: 0, credit: 0 }]);
+    setRows((current) => [...current, { id: Date.now(), account_id: '', description: '', debit: 0, credit: 0 }]);
   };
 
   const removeRow = (id) => {
@@ -42,10 +75,34 @@ export default function JournalEntry() {
 
   const saveEntry = async () => {
     setSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setSaving(false);
-    setMessage(t('accounting.postedMessage'));
+    setMessage('');
+    setError('');
+
+    try {
+      await ApiClient.createJournalEntry(token, {
+        entry_number: entryNumber,
+        entry_date: entryDate,
+        description: reference,
+        reference_doc: reference,
+        post: true,
+        lines: rows.map((row) => ({
+          account_id: Number(row.account_id),
+          description: row.description || reference,
+          debit: Number(row.debit || 0),
+          credit: Number(row.credit || 0),
+        })),
+      });
+      setMessage(t('accounting.postedMessage'));
+      setEntryNumber(newEntryNumber());
+      setRows(blankRows.map((row) => ({ ...row })));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const canPost = totals.balanced && totals.debit > 0 && rows.every((row) => row.account_id && (Number(row.debit) > 0 || Number(row.credit) > 0));
 
   return (
     <section className="space-y-4">
@@ -53,6 +110,12 @@ export default function JournalEntry() {
         <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
           <CheckCircle2 size={18} />
           {message}
+        </div>
+      )}
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-800">
+          <AlertCircle size={18} />
+          {error}
         </div>
       )}
 
@@ -75,10 +138,10 @@ export default function JournalEntry() {
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[840px] text-sm">
+          <table className="w-full min-w-[920px] text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-widest text-slate-500">
               <tr>
-                <th className="px-4 py-3 text-start">{t('accounting.accountCode')}</th>
+                <th className="px-4 py-3 text-start">{t('accounting.account')}</th>
                 <th className="px-4 py-3 text-start">{t('common.description')}</th>
                 <th className="px-4 py-3 text-end">{t('common.debit')}</th>
                 <th className="px-4 py-3 text-end">{t('common.credit')}</th>
@@ -86,10 +149,22 @@ export default function JournalEntry() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {rows.map((row) => (
+              {isLoading && (
+                <tr>
+                  <td className="px-4 py-6 font-bold text-slate-500" colSpan={5}>{t('common.loading', 'Loading live data...')}</td>
+                </tr>
+              )}
+              {!isLoading && rows.map((row) => (
                 <tr key={row.id} className="hover:bg-slate-50">
                   <td className="p-2">
-                    <input value={row.accountCode} onChange={(event) => updateRow(row.id, 'accountCode', event.target.value)} className="h-9 w-full rounded-md border border-transparent bg-transparent px-2 font-mono font-bold text-blue-800 outline-none hover:border-slate-200 focus:border-blue-500 focus:bg-white" dir="ltr" />
+                    <select value={row.account_id} onChange={(event) => updateRow(row.id, 'account_id', event.target.value)} className="h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm font-bold text-slate-800 outline-none focus:border-blue-500">
+                      <option value="">{t('accounting.accountSearch')}</option>
+                      {accounts.map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.code} · {language === 'ar' ? account.name_ar : account.name_en}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td className="p-2">
                     <input value={row.description} onChange={(event) => updateRow(row.id, 'description', event.target.value)} className="h-9 w-full rounded-md border border-transparent bg-transparent px-2 outline-none hover:border-slate-200 focus:border-blue-500 focus:bg-white" />
@@ -137,7 +212,7 @@ export default function JournalEntry() {
           <button type="button" className="h-10 rounded-md border border-slate-200 px-4 text-sm font-bold text-slate-700 hover:bg-slate-50">{t('common.draft')}</button>
           <button
             type="button"
-            disabled={!totals.balanced || totals.debit === 0 || saving}
+            disabled={!canPost || saving}
             onClick={saveEntry}
             className="inline-flex h-10 items-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-bold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
           >

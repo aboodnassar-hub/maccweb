@@ -13,7 +13,7 @@ const tabs = [
   { id: 'periods', key: 'accounting.tabs.periods' },
 ];
 
-export default function AccountingWorkspace() {
+export default function AccountingWorkspace({ token }) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -88,9 +88,9 @@ export default function AccountingWorkspace() {
         </section>
       )}
 
-      {activeTab === 'accounts' && <ChartOfAccounts />}
-      {activeTab === 'journal' && <JournalEntry />}
-      {activeTab === 'ledger' && <TrialBalance />}
+      {activeTab === 'accounts' && <ChartOfAccounts token={token} />}
+      {activeTab === 'journal' && <JournalEntry token={token} />}
+      {activeTab === 'ledger' && <TrialBalance token={token} />}
       {activeTab === 'periods' && (
         <section className="rounded-lg border border-slate-200 bg-white p-5">
           <h3 className="font-black text-slate-950">{t('accounting.fiscalStatus')}</h3>

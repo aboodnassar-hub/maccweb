@@ -8,6 +8,7 @@ from backend.app.core.config import get_settings
 from backend.app.core.security import decode_access_token
 from backend.app.db.session import get_db
 from backend.app.modules.auth.models import User
+from backend.app.modules.companies.models import Company
 
 
 oauth2_scheme = OAuth2PasswordBearer(
@@ -36,6 +37,12 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Inactive or missing user",
+        )
+    company = db.get(Company, user.company_id)
+    if not company or not company.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Inactive or missing company",
         )
     return user
 
