@@ -42,3 +42,22 @@ class FinancialYear(Base):
     starts_on = Column(Date, nullable=False)
     ends_on = Column(Date, nullable=False)
     status = Column(String(16), nullable=False, default="OPEN")
+
+    periods = relationship("AccountingPeriod", back_populates="financial_year", cascade="all, delete-orphan")
+
+
+class AccountingPeriod(Base):
+    __tablename__ = "accounting_periods"
+    __table_args__ = (UniqueConstraint("company_id", "code", name="uq_accounting_period_company_code"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
+    financial_year_id = Column(Integer, ForeignKey("financial_years.id"), nullable=False, index=True)
+    code = Column(String(16), nullable=False)
+    name_en = Column(String(255), nullable=False)
+    name_ar = Column(String(255), nullable=False)
+    starts_on = Column(Date, nullable=False)
+    ends_on = Column(Date, nullable=False)
+    status = Column(String(16), nullable=False, default="OPEN")
+
+    financial_year = relationship("FinancialYear", back_populates="periods")

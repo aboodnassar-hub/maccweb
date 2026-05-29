@@ -4,11 +4,11 @@ from sqlalchemy.orm import Session
 from backend.app.core.config import get_settings
 from backend.app.core.security import hash_password
 from backend.app.modules.accounting.models import Account, CostCenter, JournalEntry, JournalLine
-from backend.app.modules.accounting.seed import seed_chart_of_accounts
+from backend.app.modules.accounting.seed import seed_chart_of_accounts, seed_fiscal_calendar
 from backend.app.modules.audit.models import ActivityLog
 from backend.app.modules.auth.models import Role, User, user_roles
 from backend.app.modules.auth.service import ensure_default_roles
-from backend.app.modules.companies.models import Branch, Company, FinancialYear
+from backend.app.modules.companies.models import AccountingPeriod, Branch, Company, FinancialYear
 from backend.app.modules.hr.models import Department, Employee
 from backend.app.modules.inventory.models import Item, StockMovement, Warehouse
 from backend.app.modules.notifications.models import Notification
@@ -105,6 +105,7 @@ def create_company_account(db: Session, payload: CompanyAccountCreate) -> Compan
     db.add(user)
     db.commit()
     seed_chart_of_accounts(db, company.id)
+    seed_fiscal_calendar(db, company.id)
 
     return next(item for item in list_company_accounts(db) if item.id == company.id)
 
@@ -164,6 +165,7 @@ def delete_company_account(db: Session, company_id: int) -> None:
         CostCenter,
         Account,
         User,
+        AccountingPeriod,
         FinancialYear,
         Branch,
     ]:

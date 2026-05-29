@@ -50,10 +50,12 @@ class JournalEntry(Base):
     reference_doc = Column(String(100), nullable=True)
     source_module = Column(String(40), nullable=False, default="manual")
     status = Column(String(20), nullable=False, default="DRAFT")
+    reversal_of_id = Column(Integer, ForeignKey("journal_entries.id"), nullable=True)
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     lines = relationship("JournalLine", back_populates="journal_entry", cascade="all, delete-orphan")
+    reversal_of = relationship("JournalEntry", remote_side=[id])
 
 
 class JournalLine(Base):

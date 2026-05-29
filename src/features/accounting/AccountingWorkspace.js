@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { CalendarDays, CheckCircle2, FileText, GitBranch, LockKeyhole, Scale } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertCircle, CalendarDays, CheckCircle2, FileText, GitBranch, LockKeyhole, Scale } from 'lucide-react';
 import ChartOfAccounts from './ChartOfAccounts';
+import FiscalPeriods from './FiscalPeriods';
 import JournalEntry from './JournalEntry';
 import TrialBalance from './TrialBalance';
 import { useI18n } from '../../i18n/I18nProvider';
+import { ApiClient } from '../../services/api';
 
 const tabs = [
   { id: 'overview', key: 'accounting.tabs.overview' },
@@ -16,6 +18,54 @@ const tabs = [
 export default function AccountingWorkspace({ token }) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState('overview');
+  const [summary, setSummary] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    setError('');
+
+    ApiClient.accountingSummary(token)
+      .then((payload) => {
+        if (active) setSummary(payload);
+      })
+      .catch((err) => {
+        if (active) setError(err.message);
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  const insightCards = useMemo(() => {
+    if (!summary) return [];
+    return [
+      {
+        icon: FileText,
+        label: t('accounting.openingBalance'),
+        value: Number(summary.opening_balance || 0).toFixed(3),
+        hint: t('accounting.priorYearCarry'),
+      },
+      {
+        icon: CalendarDays,
+        label: t('accounting.fiscalStatus'),
+        value: summary.fiscal_year_code || t('common.pending'),
+        hint: summary.current_period_code ? `${summary.current_period_code} · ${summary.current_period_status}` : t('accounting.noCurrentPeriod'),
+      },
+      {
+        icon: CheckCircle2,
+        label: t('accounting.accountingHealth'),
+        value: summary.health_status === 'BALANCED' ? t('common.balanced') : t('common.attention'),
+        hint: `${t('common.difference')}: ${Number(summary.difference || 0).toFixed(3)}`,
+      },
+    ];
+  }, [summary, t]);
 
   return (
     <div className="space-y-6">
@@ -43,10 +93,17 @@ export default function AccountingWorkspace({ token }) {
 
       {activeTab === 'overview' && (
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {isLoading && <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm font-bold text-slate-500 lg:col-span-3">{t('common.loading')}</div>}
+          {error && (
+            <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 p-5 text-sm font-bold text-rose-700 lg:col-span-3">
+              <AlertCircle size={18} />
+              {error}
+            </div>
+          )}
           {[
             { icon: Scale, key: 'accounting.controlDoubleEntry', state: 'common.enabled' },
             { icon: GitBranch, key: 'accounting.controlLeafOnly', state: 'common.enabled' },
-            { icon: LockKeyhole, key: 'accounting.controlPeriodLock', state: 'common.foundation' },
+            { icon: LockKeyhole, key: 'accounting.controlPeriodLock', state: 'common.enabled' },
           ].map((control) => {
             const Icon = control.icon;
             return (
@@ -60,50 +117,54 @@ export default function AccountingWorkspace({ token }) {
             );
           })}
 
-          <article className="rounded-lg border border-slate-200 bg-white p-5 lg:col-span-3">
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="flex items-center gap-3">
-                <FileText className="text-slate-500" size={22} />
-                <div>
-                  <p className="text-sm font-bold text-slate-500">{t('accounting.openingBalance')}</p>
-                  <p className="font-mono text-xl font-black text-slate-950" dir="ltr">JOD 0.000</p>
+          {summary && (
+            <>
+              <article className="rounded-lg border border-slate-200 bg-white p-5 lg:col-span-3">
+                <div className="grid gap-4 md:grid-cols-3">
+                  {insightCards.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.label} className="flex items-center gap-3">
+                        <Icon className="text-slate-500" size={22} />
+                        <div>
+                          <p className="text-sm font-bold text-slate-500">{item.label}</p>
+                          <p className="font-mono text-xl font-black text-slate-950" dir="ltr">{item.value}</p>
+                          <p className="mt-1 text-xs font-bold text-slate-500">{item.hint}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <CalendarDays className="text-slate-500" size={22} />
-                <div>
-                  <p className="text-sm font-bold text-slate-500">{t('accounting.fiscalStatus')}</p>
-                  <p className="text-xl font-black text-slate-950">{t('common.active')}</p>
+              </article>
+
+              <article className="rounded-lg border border-slate-200 bg-white p-5 lg:col-span-3">
+                <div className="grid gap-4 md:grid-cols-4">
+                  {[
+                    { label: t('accounting.totalAccounts'), value: summary.accounts_total },
+                    { label: t('accounting.postingAccounts'), value: summary.posting_accounts },
+                    { label: t('accounting.draftEntries'), value: summary.draft_entries },
+                    { label: t('accounting.postedEntries'), value: summary.posted_entries },
+                    { label: t('accounting.openPeriods'), value: summary.open_periods },
+                    { label: t('accounting.restrictedPeriods'), value: summary.restricted_periods },
+                    { label: t('common.debit'), value: Number(summary.posted_debit || 0).toFixed(3) },
+                    { label: t('common.credit'), value: Number(summary.posted_credit || 0).toFixed(3) },
+                  ].map((metric) => (
+                    <div key={metric.label} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-xs font-black uppercase tracking-widest text-slate-500">{metric.label}</p>
+                      <p className="mt-2 font-mono text-xl font-black text-slate-950" dir="ltr">{metric.value}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="text-emerald-600" size={22} />
-                <div>
-                  <p className="text-sm font-bold text-slate-500">{t('common.status')}</p>
-                  <p className="text-xl font-black text-slate-950">{t('common.foundation')}</p>
-                </div>
-              </div>
-            </div>
-          </article>
+              </article>
+            </>
+          )}
         </section>
       )}
 
       {activeTab === 'accounts' && <ChartOfAccounts token={token} />}
       {activeTab === 'journal' && <JournalEntry token={token} />}
       {activeTab === 'ledger' && <TrialBalance token={token} />}
-      {activeTab === 'periods' && (
-        <section className="rounded-lg border border-slate-200 bg-white p-5">
-          <h3 className="font-black text-slate-950">{t('accounting.fiscalStatus')}</h3>
-          <div className="mt-4 grid gap-3 md:grid-cols-4">
-            {['Q1', 'Q2', 'Q3', 'Q4'].map((period, index) => (
-              <div key={period} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <p className="font-mono text-lg font-black text-slate-950" dir="ltr">2026-{period}</p>
-                <p className="mt-2 text-sm font-bold text-slate-500">{index < 2 ? t('common.active') : t('common.pending')}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {activeTab === 'periods' && <FiscalPeriods token={token} />}
     </div>
   );
 }

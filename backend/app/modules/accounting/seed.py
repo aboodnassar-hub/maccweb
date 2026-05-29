@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from backend.app.modules.accounting.models import Account
+from backend.app.modules.companies.models import AccountingPeriod, FinancialYear
 
 
 DEFAULT_ACCOUNTS = [
@@ -42,5 +43,46 @@ def seed_chart_of_accounts(db: Session, company_id: int) -> None:
         )
         db.add(account)
         accounts_by_code[code] = account
+
+    db.commit()
+
+
+def seed_fiscal_calendar(db: Session, company_id: int, year: int | None = None) -> None:
+    from calendar import monthrange
+    from datetime import date, timedelta
+
+    year = year or date.today().year
+    code = f"FY{year}"
+    existing = db.query(FinancialYear).filter(FinancialYear.company_id == company_id, FinancialYear.code == code).first()
+    if existing:
+        return
+
+    financial_year = FinancialYear(
+        company_id=company_id,
+        code=code,
+        starts_on=date(year, 1, 1),
+        ends_on=date(year, 12, 31),
+        status="OPEN",
+    )
+    db.add(financial_year)
+    db.flush()
+
+    current = financial_year.starts_on
+    while current <= financial_year.ends_on:
+        period_end = date(current.year, current.month, monthrange(current.year, current.month)[1])
+        code = current.strftime("%Y-%m")
+        db.add(
+            AccountingPeriod(
+                company_id=company_id,
+                financial_year=financial_year,
+                code=code,
+                name_en=current.strftime("%B %Y"),
+                name_ar=code,
+                starts_on=current,
+                ends_on=period_end,
+                status="OPEN",
+            )
+        )
+        current = period_end + timedelta(days=1)
 
     db.commit()

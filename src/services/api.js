@@ -66,6 +66,25 @@ export const ApiClient = {
     return request('/accounting/accounts', { token });
   },
 
+  accountingSummary(token) {
+    return request('/accounting/summary', { token });
+  },
+
+  createAccount(token, payload) {
+    return request('/accounting/accounts', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteAccount(token, accountId) {
+    return request(`/accounting/accounts/${accountId}`, {
+      method: 'DELETE',
+      token,
+    });
+  },
+
   journalEntries(token) {
     return request('/accounting/journal-entries', { token });
   },
@@ -78,8 +97,53 @@ export const ApiClient = {
     });
   },
 
-  trialBalance(token) {
-    return request('/accounting/trial-balance', { token });
+  postJournalEntry(token, entryId) {
+    return request(`/accounting/journal-entries/${entryId}/post`, {
+      method: 'POST',
+      token,
+    });
+  },
+
+  reverseJournalEntry(token, entryId, payload) {
+    return request(`/accounting/journal-entries/${entryId}/reverse`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    });
+  },
+
+  trialBalance(token, filters = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    const query = params.toString();
+    return request(`/accounting/trial-balance${query ? `?${query}` : ''}`, { token });
+  },
+
+  fiscalYears(token) {
+    return request('/accounting/fiscal-years', { token });
+  },
+
+  createFiscalYear(token, payload) {
+    return request('/accounting/fiscal-years', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    });
+  },
+
+  fiscalPeriods(token, fiscalYearId) {
+    const query = fiscalYearId ? `?fiscal_year_id=${fiscalYearId}` : '';
+    return request(`/accounting/periods${query}`, { token });
+  },
+
+  updateFiscalPeriod(token, periodId, payload) {
+    return request(`/accounting/periods/${periodId}`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify(payload),
+    });
   },
 
   partners(token) {

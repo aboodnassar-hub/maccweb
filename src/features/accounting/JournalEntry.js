@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, Plus, Save, Trash2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Plus, RotateCcw, Save, Send, Trash2 } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { ApiClient } from '../../services/api';
 
@@ -19,6 +19,7 @@ const blankRows = [
 export default function JournalEntry({ token }) {
   const { language, t } = useI18n();
   const [accounts, setAccounts] = useState([]);
+  const [entries, setEntries] = useState([]);
   const [entryNumber, setEntryNumber] = useState(newEntryNumber());
   const [entryDate, setEntryDate] = useState(today());
   const [reference, setReference] = useState('');
@@ -28,14 +29,21 @@ export default function JournalEntry({ token }) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  const reloadEntries = async () => {
+    const payload = await ApiClient.journalEntries(token);
+    setEntries(payload);
+  };
+
   useEffect(() => {
     let active = true;
     setIsLoading(true);
     setError('');
 
-    ApiClient.accounts(token)
-      .then((payload) => {
-        if (active) setAccounts(payload.filter((account) => !account.is_group));
+    Promise.all([ApiClient.accounts(token), ApiClient.journalEntries(token)])
+      .then(([accountPayload, entryPayload]) => {
+        if (!active) return;
+        setAccounts(accountPayload.filter((account) => !account.is_group && account.children_count === 0));
+        setEntries(entryPayload);
       })
       .catch((err) => {
         if (active) setError(err.message);
@@ -73,7 +81,7 @@ export default function JournalEntry({ token }) {
     setRows((current) => (current.length > 2 ? current.filter((row) => row.id !== id) : current));
   };
 
-  const saveEntry = async () => {
+  const submitEntry = async (post) => {
     setSaving(true);
     setMessage('');
     setError('');
@@ -84,7 +92,7 @@ export default function JournalEntry({ token }) {
         entry_date: entryDate,
         description: reference,
         reference_doc: reference,
-        post: true,
+        post,
         lines: rows.map((row) => ({
           account_id: Number(row.account_id),
           description: row.description || reference,
@@ -92,9 +100,10 @@ export default function JournalEntry({ token }) {
           credit: Number(row.credit || 0),
         })),
       });
-      setMessage(t('accounting.postedMessage'));
+      setMessage(post ? t('accounting.postedMessage') : t('accounting.draftSavedMessage'));
       setEntryNumber(newEntryNumber());
       setRows(blankRows.map((row) => ({ ...row })));
+      await reloadEntries();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -102,7 +111,34 @@ export default function JournalEntry({ token }) {
     }
   };
 
-  const canPost = totals.balanced && totals.debit > 0 && rows.every((row) => row.account_id && (Number(row.debit) > 0 || Number(row.credit) > 0));
+  const postDraft = async (entryId) => {
+    setMessage('');
+    setError('');
+    try {
+      await ApiClient.postJournalEntry(token, entryId);
+      setMessage(t('accounting.postedMessage'));
+      await reloadEntries();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const reverseEntry = async (entry) => {
+    setMessage('');
+    setError('');
+    try {
+      await ApiClient.reverseJournalEntry(token, entry.id, {
+        entry_date: today(),
+        description: `${t('accounting.reversalOf')} ${entry.entry_number}`,
+      });
+      setMessage(t('accounting.reversalCreated'));
+      await reloadEntries();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const canSave = totals.balanced && totals.debit > 0 && rows.every((row) => row.account_id && (Number(row.debit) > 0 || Number(row.credit) > 0));
 
   return (
     <section className="space-y-4">
@@ -151,7 +187,7 @@ export default function JournalEntry({ token }) {
             <tbody className="divide-y divide-slate-100">
               {isLoading && (
                 <tr>
-                  <td className="px-4 py-6 font-bold text-slate-500" colSpan={5}>{t('common.loading', 'Loading live data...')}</td>
+                  <td className="px-4 py-6 font-bold text-slate-500" colSpan={5}>{t('common.loading')}</td>
                 </tr>
               )}
               {!isLoading && rows.map((row) => (
@@ -161,7 +197,7 @@ export default function JournalEntry({ token }) {
                       <option value="">{t('accounting.accountSearch')}</option>
                       {accounts.map((account) => (
                         <option key={account.id} value={account.id}>
-                          {account.code} · {language === 'ar' ? account.name_ar : account.name_en}
+                          {account.code} - {language === 'ar' ? account.name_ar : account.name_en}
                         </option>
                       ))}
                     </select>
@@ -176,7 +212,7 @@ export default function JournalEntry({ token }) {
                     <input type="number" min="0" value={row.credit || ''} onChange={(event) => updateRow(row.id, 'credit', event.target.value)} className="h-9 w-full rounded-md border border-transparent bg-transparent px-2 text-end font-mono outline-none hover:border-slate-200 focus:border-blue-500 focus:bg-white" dir="ltr" />
                   </td>
                   <td className="p-2 text-center">
-                    <button type="button" title="Remove line" onClick={() => removeRow(row.id)} className="rounded-md p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600">
+                    <button type="button" title={t('systemAdmin.delete')} onClick={() => removeRow(row.id)} className="rounded-md p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600">
                       <Trash2 size={16} />
                     </button>
                   </td>
@@ -209,16 +245,78 @@ export default function JournalEntry({ token }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <button type="button" className="h-10 rounded-md border border-slate-200 px-4 text-sm font-bold text-slate-700 hover:bg-slate-50">{t('common.draft')}</button>
           <button
             type="button"
-            disabled={!canPost || saving}
-            onClick={saveEntry}
-            className="inline-flex h-10 items-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-bold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+            disabled={!canSave || saving}
+            onClick={() => submitEntry(false)}
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 px-4 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
           >
             <Save size={16} />
+            {t('common.draft')}
+          </button>
+          <button
+            type="button"
+            disabled={!canSave || saving}
+            onClick={() => submitEntry(true)}
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-bold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          >
+            <Send size={16} />
             {saving ? t('accounting.posting') : t('accounting.postEntry')}
           </button>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 px-5 py-4">
+          <h3 className="font-black text-slate-950">{t('accounting.recentEntries')}</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[820px] text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-widest text-slate-500">
+              <tr>
+                <th className="px-5 py-3 text-start">{t('accounting.entryNumber')}</th>
+                <th className="px-5 py-3 text-start">{t('common.date')}</th>
+                <th className="px-5 py-3 text-start">{t('common.description')}</th>
+                <th className="px-5 py-3 text-start">{t('common.status')}</th>
+                <th className="px-5 py-3 text-end">{t('systemAdmin.actions')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {entries.length === 0 && (
+                <tr>
+                  <td className="px-5 py-6 text-center font-semibold text-slate-500" colSpan={5}>{t('common.empty')}</td>
+                </tr>
+              )}
+              {entries.map((entry) => (
+                <tr key={entry.id} className="hover:bg-slate-50">
+                  <td className="px-5 py-3 font-mono font-black text-blue-800" dir="ltr">{entry.entry_number}</td>
+                  <td className="px-5 py-3 font-bold text-slate-700" dir="ltr">{entry.entry_date}</td>
+                  <td className="px-5 py-3 font-semibold text-slate-700">{entry.description || entry.reference_doc || entry.source_module}</td>
+                  <td className="px-5 py-3">
+                    <span className={`rounded-md px-2 py-1 text-xs font-black ${entry.status === 'POSTED' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                      {entry.status}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <div className="flex justify-end gap-2">
+                      {entry.status === 'DRAFT' && (
+                        <button type="button" onClick={() => postDraft(entry.id)} className="inline-flex h-9 items-center gap-2 rounded-md bg-blue-700 px-3 text-xs font-bold text-white hover:bg-blue-800">
+                          <Send size={14} />
+                          {t('common.post')}
+                        </button>
+                      )}
+                      {entry.status === 'POSTED' && !entry.reversal_of_id && (
+                        <button type="button" onClick={() => reverseEntry(entry)} className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 px-3 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                          <RotateCcw size={14} />
+                          {t('accounting.reverse')}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
