@@ -1,70 +1,129 @@
-# Getting Started with Create React App
+# Macc ERP / Accounting Platform
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Macc is being transformed from a small accounting app into a modular web ERP/accounting platform with Arabic and English support, RTL/LTR layouts, a React frontend, and a FastAPI backend.
 
-## Available Scripts
+## Current Architecture
 
-In the project directory, you can run:
+```text
+backend/
+  app/
+    api/                 FastAPI router composition and dependencies
+    core/                Configuration and security helpers
+    db/                  SQLAlchemy base, session, model registry, seed helpers
+    modules/
+      accounting/        Chart of accounts, journals, trial balance
+      auth/              Users, roles, permissions, signed tokens
+      companies/         Company, branch, financial year boundaries
+      inventory/         Warehouses, items, stock movements
+      parties/           Customers, vendors, business partners
+      sales/             Invoices, invoice lines, payments
+      hr/                Departments and employees
+      audit/             Activity log tables
+      notifications/     In-app notification tables
+  alembic/               Database migrations
+src/
+  app/                   React shell and navigation registry
+  data/                  Demo ERP data used by the frontend workspace
+  features/              Auth, dashboard, accounting, and module workspaces
+  i18n/                  English/Arabic translations and direction handling
+  services/              API client
+```
 
-### `npm start`
+Backend entry points, models, and database configuration live under `backend/app`. The old project-root backend shims have been removed.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Frontend
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+```powershell
+npm install
+npm start
+```
 
-### `npm test`
+The React app runs on [http://localhost:3000](http://localhost:3000). By default the login uses local demo mode. To connect it to the backend auth API, start the backend and run the frontend with:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```powershell
+$env:REACT_APP_USE_API="true"
+$env:REACT_APP_API_URL="http://127.0.0.1:8000/api/v1"
+npm start
+```
 
-### `npm run build`
+## Backend Environment
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Required for production:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```powershell
+$env:MACC_DATABASE_URL="postgresql://user:password@host:5432/database"
+$env:MACC_SECRET_KEY="replace-with-a-long-random-secret"
+$env:MACC_ENV="production"
+$env:MACC_ALLOWED_ORIGINS="https://your-frontend-domain.example"
+$env:MACC_AUTO_CREATE_TABLES="false"
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Optional:
 
-### `npm run eject`
+```powershell
+$env:MACC_API_PREFIX="/api/v1"
+$env:MACC_APP_NAME="Macc ERP API"
+$env:MACC_ACCESS_TOKEN_EXPIRE_MINUTES="720"
+$env:MACC_DEFAULT_COMPANY_CODE="MAIN"
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Render may expose the database URL as `DATABASE_URL`; the backend accepts that too. If Render provides a `postgres://` URL, the backend normalizes it to `postgresql://`.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Backend Local Development
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Install backend dependencies:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```powershell
+venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+```
 
-## Learn More
+Run migrations and seed default company, roles, permissions, and chart of accounts:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```powershell
+venv\Scripts\alembic.exe upgrade head
+venv\Scripts\python.exe -m backend.app.db.seed
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Start the API:
 
-### Code Splitting
+```powershell
+venv\Scripts\uvicorn.exe backend.app.main:app --reload --host 127.0.0.1 --port 8000
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+The API runs on [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
-### Analyzing the Bundle Size
+## Render Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Recommended Render build command:
 
-### Making a Progressive Web App
+```bash
+pip install -r backend/requirements.txt
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+Recommended Render start command:
 
-### Advanced Configuration
+```bash
+alembic upgrade head && python -m backend.app.db.seed && uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Set `MACC_AUTO_CREATE_TABLES=false` in Render so production schema changes only happen through Alembic.
 
-### Deployment
+## Verification
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+```powershell
+npm run build
+npm test -- --watchAll=false --runInBand
+venv\Scripts\python.exe -c "from backend.app.main import app; print(app.title)"
+```
 
-### `npm run build` fails to minify
+## ERP Direction
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The first foundation slice includes module boundaries, multi-company-ready data models, role-based permissions, bilingual labels, RTL/LTR support, chart of accounts seeding, journal balancing validation, and starter records for inventory, sales, purchases, HR, reports, audit logs, and notifications.
+
+Next backend milestones:
+
+1. Expand service-layer posting flows for invoices, payments, payroll, and stock movements.
+2. Add report endpoints for general ledger, trial balance, account statements, inventory movement, AR/AP aging, and tax summaries.
+3. Add permission-aware frontend API integration.
+4. Add activity-log middleware and notification events.
+5. Add automated backend tests around posting, permissions, and migration integrity.

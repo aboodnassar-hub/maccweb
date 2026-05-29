@@ -1,0 +1,6 @@
+Alembic migrations for the Macc backend.
+
+Use from the repository root:
+
+    alembic upgrade head
+    alembic revision --autogenerate -m "describe change"

@@ -7,9 +7,17 @@
 
 # testing
 /coverage
+__pycache__/
+*.py[cod]
 
 # production
 /build
+
+# local backend runtime
+/venv
+/macc_erp.db
+*.sqlite
+*.sqlite3
 
 # misc
 .DS_Store
