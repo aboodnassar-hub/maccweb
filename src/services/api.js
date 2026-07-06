@@ -167,8 +167,54 @@ export const ApiClient = {
     return request('/sales/invoices', { token });
   },
 
+  createSalesInvoice(token, payload) {
+    return request('/sales/invoices', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    });
+  },
+
+  postSalesInvoice(token, invoiceId) {
+    return request(`/sales/invoices/${invoiceId}/post`, {
+      method: 'POST',
+      token,
+    });
+  },
+
+  cancelSalesInvoice(token, invoiceId, payload = {}) {
+    return request(`/sales/invoices/${invoiceId}/cancel`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    });
+  },
+
   purchaseInvoices(token) {
     return request('/purchases/invoices', { token });
+  },
+
+  createPurchaseInvoice(token, payload) {
+    return request('/purchases/invoices', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    });
+  },
+
+  postPurchaseInvoice(token, invoiceId) {
+    return request(`/purchases/invoices/${invoiceId}/post`, {
+      method: 'POST',
+      token,
+    });
+  },
+
+  cancelPurchaseInvoice(token, invoiceId, payload = {}) {
+    return request(`/purchases/invoices/${invoiceId}/cancel`, {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    });
   },
 
   employees(token) {

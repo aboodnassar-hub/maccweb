@@ -4,6 +4,7 @@ import { NAVIGATION_GROUPS } from './navigation';
 import AuthScreen from '../features/auth/AuthScreen';
 import Dashboard from '../features/dashboard/Dashboard';
 import AccountingWorkspace from '../features/accounting/AccountingWorkspace';
+import InvoiceWorkspace from '../features/modules/InvoiceWorkspace';
 import ModuleWorkspace from '../features/modules/ModuleWorkspace';
 import SystemAdminPortal from '../features/systemAdmin/SystemAdminPortal';
 import { useI18n } from '../i18n/I18nProvider';
@@ -148,7 +149,8 @@ export default function AppShell() {
         <main className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
           {activeModule === 'dashboard' && <Dashboard token={user.token} />}
           {activeModule === 'accounting' && <AccountingWorkspace token={user.token} />}
-          {!['dashboard', 'accounting'].includes(activeModule) && <ModuleWorkspace moduleId={activeModule} token={user.token} />}
+          {['sales', 'purchases'].includes(activeModule) && <InvoiceWorkspace moduleId={activeModule} token={user.token} />}
+          {!['dashboard', 'accounting', 'sales', 'purchases'].includes(activeModule) && <ModuleWorkspace moduleId={activeModule} token={user.token} />}
         </main>
       </div>
     </div>

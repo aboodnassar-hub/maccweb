@@ -11,26 +11,32 @@ DEFAULT_ACCOUNTS = [
     ("1111", "Main Cash Box", "الصندوق الرئيسي", "ASSET", "DEBIT", "111", False),
     ("1112", "Petty Cash", "العهدة النقدية", "ASSET", "DEBIT", "111", False),
     ("112", "Accounts Receivable", "الذمم المدينة", "ASSET", "DEBIT", "11", False),
+    ("113", "Inventory", "المخزون", "ASSET", "DEBIT", "11", False),
+    ("114", "VAT Receivable", "ضريبة مدخلات قابلة للاسترداد", "ASSET", "DEBIT", "11", False),
     ("12", "Fixed Assets", "الأصول الثابتة", "ASSET", "DEBIT", "1", True),
     ("2", "Liabilities", "الخصوم", "LIABILITY", "CREDIT", None, True),
     ("21", "Current Liabilities", "الخصوم المتداولة", "LIABILITY", "CREDIT", "2", True),
     ("211", "Accounts Payable", "الذمم الدائنة", "LIABILITY", "CREDIT", "21", False),
+    ("213", "VAT Payable", "ضريبة مخرجات مستحقة", "LIABILITY", "CREDIT", "21", False),
     ("3", "Equity", "حقوق الملكية", "EQUITY", "CREDIT", None, True),
     ("4", "Revenue", "الإيرادات", "REVENUE", "CREDIT", None, True),
     ("41", "Sales Revenue", "إيرادات المبيعات", "REVENUE", "CREDIT", "4", False),
+    ("42", "Sales Discounts", "خصومات المبيعات", "REVENUE", "DEBIT", "4", False),
     ("5", "Expenses", "المصروفات", "EXPENSE", "DEBIT", None, True),
     ("51", "Operating Expenses", "المصروفات التشغيلية", "EXPENSE", "DEBIT", "5", True),
     ("511", "Rent Expense", "مصروف الإيجار", "EXPENSE", "DEBIT", "51", False),
+    ("52", "Cost of Goods Sold", "تكلفة البضاعة المباعة", "EXPENSE", "DEBIT", "5", False),
 ]
 
 
 def seed_chart_of_accounts(db: Session, company_id: int) -> None:
-    existing = db.query(Account).filter(Account.company_id == company_id).first()
-    if existing:
-        return
-
-    accounts_by_code: dict[str, Account] = {}
+    accounts_by_code: dict[str, Account] = {
+        account.code: account
+        for account in db.query(Account).filter(Account.company_id == company_id).all()
+    }
     for code, name_en, name_ar, account_type, normal_balance, parent_code, is_group in DEFAULT_ACCOUNTS:
+        if code in accounts_by_code:
+            continue
         account = Account(
             company_id=company_id,
             code=code,
@@ -42,6 +48,7 @@ def seed_chart_of_accounts(db: Session, company_id: int) -> None:
             is_group=is_group,
         )
         db.add(account)
+        db.flush()
         accounts_by_code[code] = account
 
     db.commit()
@@ -70,14 +77,14 @@ def seed_fiscal_calendar(db: Session, company_id: int, year: int | None = None) 
     current = financial_year.starts_on
     while current <= financial_year.ends_on:
         period_end = date(current.year, current.month, monthrange(current.year, current.month)[1])
-        code = current.strftime("%Y-%m")
+        period_code = current.strftime("%Y-%m")
         db.add(
             AccountingPeriod(
                 company_id=company_id,
                 financial_year=financial_year,
-                code=code,
+                code=period_code,
                 name_en=current.strftime("%B %Y"),
-                name_ar=code,
+                name_ar=period_code,
                 starts_on=current,
                 ends_on=period_end,
                 status="OPEN",
