@@ -3,7 +3,7 @@ import { AlertCircle, CheckCircle2, Edit3, Plus, Power, Save, Search, Trash2, Us
 import { useI18n } from '../../i18n/I18nProvider';
 import { ApiClient } from '../../services/api';
 
-const blankForm = {
+const baseBlankForm = {
   code: '',
   partner_type: 'CUSTOMER',
   name_en: '',
@@ -14,6 +14,33 @@ const blankForm = {
   address: '',
   receivable_account_id: '',
   payable_account_id: '',
+};
+
+const partnerScopes = {
+  customers: {
+    type: 'CUSTOMER',
+    titleKey: 'customers.title',
+    subtitleKey: 'customers.subtitle',
+    newKey: 'customers.newCustomer',
+    editKey: 'customers.editCustomer',
+    registerKey: 'customers.register',
+  },
+  suppliers: {
+    type: 'VENDOR',
+    titleKey: 'suppliers.title',
+    subtitleKey: 'suppliers.subtitle',
+    newKey: 'suppliers.newSupplier',
+    editKey: 'suppliers.editSupplier',
+    registerKey: 'suppliers.register',
+  },
+  partners: {
+    type: '',
+    titleKey: 'partners.title',
+    subtitleKey: 'partners.subtitle',
+    newKey: 'partners.newPartner',
+    editKey: 'partners.editPartner',
+    registerKey: 'partners.register',
+  },
 };
 
 const blankFilters = {
@@ -59,8 +86,10 @@ function partnerTypeLabel(t, type) {
   return t('partners.customer');
 }
 
-export default function BusinessPartnersWorkspace({ token }) {
+export default function BusinessPartnersWorkspace({ token, scope = 'partners' }) {
   const { language, t } = useI18n();
+  const scopeConfig = partnerScopes[scope] || partnerScopes.partners;
+  const blankForm = useMemo(() => ({ ...baseBlankForm, partner_type: scopeConfig.type || 'CUSTOMER' }), [scopeConfig.type]);
   const [partners, setPartners] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [filters, setFilters] = useState(blankFilters);
@@ -76,7 +105,7 @@ export default function BusinessPartnersWorkspace({ token }) {
     setError('');
 
     Promise.all([
-      ApiClient.partners(token, filters),
+      ApiClient.partners(token, { ...filters, ...(scopeConfig.type ? { partner_type: scopeConfig.type } : {}) }),
       ApiClient.accounts(token),
     ])
       .then(([partnerPayload, accountPayload]) => {
@@ -85,7 +114,7 @@ export default function BusinessPartnersWorkspace({ token }) {
       })
       .catch((err) => setError(err.message))
       .finally(() => setIsLoading(false));
-  }, [filters, token]);
+  }, [filters, scopeConfig.type, token]);
 
   useEffect(() => {
     load();
@@ -127,7 +156,7 @@ export default function BusinessPartnersWorkspace({ token }) {
     setEditingId(partner.id);
     setForm({
       code: partner.code || '',
-      partner_type: normalizeType(partner.partner_type || partner.type),
+      partner_type: scopeConfig.type || normalizeType(partner.partner_type || partner.type),
       name_en: partner.name_en || '',
       name_ar: partner.name_ar || '',
       tax_number: partner.tax_number || '',
@@ -143,7 +172,7 @@ export default function BusinessPartnersWorkspace({ token }) {
 
   const buildPayload = () => ({
     code: cleanString(form.code).toUpperCase(),
-    partner_type: normalizeType(form.partner_type),
+    partner_type: scopeConfig.type || normalizeType(form.partner_type),
     name_en: cleanString(form.name_en),
     name_ar: cleanString(form.name_ar),
     tax_number: cleanString(form.tax_number) || null,
@@ -202,8 +231,8 @@ export default function BusinessPartnersWorkspace({ token }) {
     <div className="space-y-6">
       <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h2 className="text-2xl font-black tracking-normal text-slate-950">{t('partners.title')}</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{t('partners.subtitle')}</p>
+          <h2 className="text-2xl font-black tracking-normal text-slate-950">{t(scopeConfig.titleKey)}</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{t(scopeConfig.subtitleKey)}</p>
         </div>
         <button
           type="button"
@@ -211,7 +240,7 @@ export default function BusinessPartnersWorkspace({ token }) {
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-bold text-white hover:bg-slate-800"
         >
           <Plus size={16} />
-          {t('partners.newPartner')}
+          {t(scopeConfig.newKey)}
         </button>
       </section>
 
@@ -244,15 +273,15 @@ export default function BusinessPartnersWorkspace({ token }) {
         </div>
       )}
 
-      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="space-y-6">
         <form onSubmit={submit} className="rounded-lg border border-slate-200 bg-white">
           <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-4">
             <Users className="text-blue-700" size={20} />
-            <h3 className="font-black text-slate-950">{editingId ? t('partners.editPartner') : t('partners.newPartner')}</h3>
+            <h3 className="font-black text-slate-950">{editingId ? t(scopeConfig.editKey) : t(scopeConfig.newKey)}</h3>
           </div>
 
           <div className="space-y-4 p-5">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <label className="block">
                 <span className={labelClass}>{t('common.code')}</span>
                 <input
@@ -263,19 +292,21 @@ export default function BusinessPartnersWorkspace({ token }) {
                   dir="ltr"
                 />
               </label>
-              <label className="block">
-                <span className={labelClass}>{t('partners.partnerType')}</span>
-                <select
-                  value={form.partner_type}
-                  onChange={(event) => setForm((current) => ({ ...current, partner_type: event.target.value }))}
-                  className={inputClass}
-                >
-                  <option value="CUSTOMER">{t('partners.customer')}</option>
-                  <option value="VENDOR">{t('partners.vendor')}</option>
-                  <option value="BOTH">{t('partners.both')}</option>
-                </select>
-              </label>
-              <label className="block">
+              {!scopeConfig.type && (
+                <label className="block">
+                  <span className={labelClass}>{t('partners.partnerType')}</span>
+                  <select
+                    value={form.partner_type}
+                    onChange={(event) => setForm((current) => ({ ...current, partner_type: event.target.value }))}
+                    className={inputClass}
+                  >
+                    <option value="CUSTOMER">{t('partners.customer')}</option>
+                    <option value="VENDOR">{t('partners.vendor')}</option>
+                    <option value="BOTH">{t('partners.both')}</option>
+                  </select>
+                </label>
+              )}
+              <label className="block xl:col-span-2">
                 <span className={labelClass}>{t('partners.nameEn')}</span>
                 <input
                   value={form.name_en}
@@ -283,7 +314,7 @@ export default function BusinessPartnersWorkspace({ token }) {
                   className={inputClass}
                 />
               </label>
-              <label className="block">
+              <label className="block xl:col-span-2">
                 <span className={labelClass}>{t('partners.nameAr')}</span>
                 <input
                   value={form.name_ar}
@@ -319,7 +350,7 @@ export default function BusinessPartnersWorkspace({ token }) {
                   dir="ltr"
                 />
               </label>
-              <label className="block">
+              <label className="block md:col-span-2 xl:col-span-1">
                 <span className={labelClass}>{t('partners.receivableAccount')}</span>
                 <select
                   value={form.receivable_account_id}
@@ -332,7 +363,7 @@ export default function BusinessPartnersWorkspace({ token }) {
                   ))}
                 </select>
               </label>
-              <label className="block">
+              <label className="block md:col-span-2 xl:col-span-1">
                 <span className={labelClass}>{t('partners.payableAccount')}</span>
                 <select
                   value={form.payable_account_id}
@@ -345,7 +376,7 @@ export default function BusinessPartnersWorkspace({ token }) {
                   ))}
                 </select>
               </label>
-              <label className="block md:col-span-2">
+              <label className="block md:col-span-2 xl:col-span-4">
                 <span className={labelClass}>{t('partners.address')}</span>
                 <textarea
                   value={form.address}
@@ -378,9 +409,9 @@ export default function BusinessPartnersWorkspace({ token }) {
           </div>
         </form>
 
-        <div className="rounded-lg border border-slate-200 bg-white">
+        <div className="min-w-0 rounded-lg border border-slate-200 bg-white">
           <div className="border-b border-slate-200 px-5 py-4">
-            <h3 className="font-black text-slate-950">{t('partners.register')}</h3>
+            <h3 className="font-black text-slate-950">{t(scopeConfig.registerKey)}</h3>
           </div>
 
           <div className="grid gap-3 border-b border-slate-100 p-4 lg:grid-cols-[1fr_160px_160px]">
@@ -393,16 +424,18 @@ export default function BusinessPartnersWorkspace({ token }) {
                 className="h-10 w-full rounded-md border border-slate-300 bg-white px-10 text-sm font-semibold text-slate-800 outline-none focus:border-blue-500"
               />
             </label>
-            <select
-              value={filters.partner_type}
-              onChange={(event) => setFilters((current) => ({ ...current, partner_type: event.target.value }))}
-              className={inputClass}
-            >
-              <option value="">{t('partners.allTypes')}</option>
-              <option value="CUSTOMER">{t('partners.customer')}</option>
-              <option value="VENDOR">{t('partners.vendor')}</option>
-              <option value="BOTH">{t('partners.both')}</option>
-            </select>
+            {!scopeConfig.type && (
+              <select
+                value={filters.partner_type}
+                onChange={(event) => setFilters((current) => ({ ...current, partner_type: event.target.value }))}
+                className={inputClass}
+              >
+                <option value="">{t('partners.allTypes')}</option>
+                <option value="CUSTOMER">{t('partners.customer')}</option>
+                <option value="VENDOR">{t('partners.vendor')}</option>
+                <option value="BOTH">{t('partners.both')}</option>
+              </select>
+            )}
             <select
               value={filters.is_active}
               onChange={(event) => setFilters((current) => ({ ...current, is_active: event.target.value }))}

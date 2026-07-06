@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, CircleCheck, Database } from 'lucide-react';
+import { AlertCircle, CircleCheck } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { ApiClient } from '../../services/api';
 
@@ -50,7 +50,7 @@ export default function Dashboard({ token }) {
 
       {isLoading && (
         <div className="rounded-lg border border-slate-200 bg-white p-5 text-sm font-bold text-slate-600">
-          {t('common.loading', 'Loading live data...')}
+          {t('common.loading', 'Loading data...')}
         </div>
       )}
 
@@ -68,10 +68,8 @@ export default function Dashboard({ token }) {
               <article key={item.code} className={`rounded-lg border p-4 ${toneClasses[item.tone] || toneClasses.blue}`}>
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-sm font-bold">{localLabel(item, language)}</p>
-                  <Database size={18} />
                 </div>
                 <p className="mt-5 text-2xl font-black tracking-normal" dir="ltr">{item.value}</p>
-                <p className="mt-2 text-sm font-bold">{t('common.live', 'Live')}</p>
               </article>
             ))}
           </section>
@@ -94,12 +92,16 @@ export default function Dashboard({ token }) {
 
             <div className="rounded-lg border border-slate-200 bg-white">
               <div className="border-b border-slate-200 px-5 py-4">
-                <h3 className="font-black text-slate-950">{t('accounting.trialBalance')}</h3>
+                <h3 className="font-black text-slate-950">{t('profitLoss.title')}</h3>
               </div>
               <div className="grid gap-3 p-5 sm:grid-cols-3">
-                {['debit', 'credit', 'difference'].map((key) => (
+                {[
+                  ['revenue', t('profitLoss.revenue')],
+                  ['cost_of_sales', t('profitLoss.costOfSales')],
+                  ['net_profit', t('profitLoss.netProfit')],
+                ].map(([key, label]) => (
                   <div key={key} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm font-bold text-slate-500">{t(`common.${key}`, key)}</p>
+                    <p className="text-sm font-bold text-slate-500">{label}</p>
                     <p className="mt-3 font-mono text-lg font-black text-slate-950" dir="ltr">{summary.financial_totals[key]}</p>
                   </div>
                 ))}

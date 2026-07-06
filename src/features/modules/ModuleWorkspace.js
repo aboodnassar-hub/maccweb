@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, Plus, RadioTower, Workflow } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Plus, Workflow } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { ApiClient } from '../../services/api';
 
@@ -189,7 +189,7 @@ export default function ModuleWorkspace({ moduleId, token }) {
           <div className="border-b border-slate-200 px-5 py-4">
             <h3 className="font-black text-slate-950">{t('modules.registers')}</h3>
           </div>
-          {isLoading && <div className="p-5 text-sm font-bold text-slate-500">{t('common.loading', 'Loading live data...')}</div>}
+          {isLoading && <div className="p-5 text-sm font-bold text-slate-500">{t('common.loading', 'Loading data...')}</div>}
           {!isLoading && !error && (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[620px] text-sm">
@@ -221,21 +221,6 @@ export default function ModuleWorkspace({ moduleId, token }) {
               </table>
             </div>
           )}
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-slate-200 bg-white p-5">
-        <div className="flex items-center gap-2">
-          <RadioTower className="text-emerald-700" size={20} />
-          <h3 className="font-black text-slate-950">{t('modules.integrations')}</h3>
-        </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          {[ApiClient.baseUrl, 'PostgreSQL', 'Bearer auth'].map((item) => (
-            <div key={item} className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="break-all font-bold text-slate-800">{item}</p>
-              <p className="mt-1 text-sm font-semibold text-emerald-700">{t('common.live', 'Live')}</p>
-            </div>
-          ))}
         </div>
       </section>
     </div>

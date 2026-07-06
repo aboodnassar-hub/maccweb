@@ -1,5 +1,6 @@
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://maccweb.onrender.com/api/v1';
 const SESSION_KEY = 'macc.session';
+let capabilitiesPromise;
 
 function normalizeErrorDetail(detail) {
   if (Array.isArray(detail)) {
@@ -29,7 +30,10 @@ async function request(path, options = {}) {
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(normalizeErrorDetail(payload.detail) || 'Request failed');
+    const error = new Error(normalizeErrorDetail(payload.detail) || 'Request failed');
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
   }
 
   if (response.status === 204) {
@@ -37,6 +41,27 @@ async function request(path, options = {}) {
   }
 
   return response.json();
+}
+
+function apiRootUrl() {
+  return API_BASE_URL.replace(/\/api\/v\d+\/?$/, '');
+}
+
+async function apiCapabilities() {
+  if (!capabilitiesPromise) {
+    capabilitiesPromise = fetch(`${apiRootUrl()}/openapi.json`)
+      .then((response) => {
+        if (!response.ok) throw new Error('OpenAPI document is not available');
+        return response.json();
+      })
+      .then((document) => ({
+        voucherEndpoints: Boolean(document.paths?.['/api/v1/vouchers/receipts'] && document.paths?.['/api/v1/vouchers/payments']),
+      }))
+      .catch(() => ({
+        voucherEndpoints: true,
+      }));
+  }
+  return capabilitiesPromise;
 }
 
 function userFromTokenResponse(response) {
@@ -51,6 +76,7 @@ function userFromTokenResponse(response) {
 
 export const ApiClient = {
   baseUrl: API_BASE_URL,
+  capabilities: apiCapabilities,
 
   async login(email, password) {
     return request('/auth/login', {
@@ -203,8 +229,52 @@ export const ApiClient = {
     return request('/inventory/warehouses', { token });
   },
 
-  items(token) {
-    return request('/inventory/items', { token });
+  items(token, filters = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.set(key, value);
+      }
+    });
+    const query = params.toString();
+    return request(`/inventory/items${query ? `?${query}` : ''}`, { token });
+  },
+
+  createItem(token, payload) {
+    return request('/inventory/items', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateItem(token, itemId, payload) {
+    return request(`/inventory/items/${itemId}`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify(payload),
+    });
+  },
+
+  activateItem(token, itemId) {
+    return request(`/inventory/items/${itemId}/activate`, {
+      method: 'POST',
+      token,
+    });
+  },
+
+  deactivateItem(token, itemId) {
+    return request(`/inventory/items/${itemId}/deactivate`, {
+      method: 'POST',
+      token,
+    });
+  },
+
+  deleteItem(token, itemId) {
+    return request(`/inventory/items/${itemId}`, {
+      method: 'DELETE',
+      token,
+    });
   },
 
   salesInvoices(token) {
@@ -267,6 +337,51 @@ export const ApiClient = {
 
   reportsOverview(token) {
     return request('/reports/overview', { token });
+  },
+
+  receiptVouchers(token) {
+    return request('/vouchers/receipts', { token });
+  },
+
+  createReceiptVoucher(token, payload) {
+    return request('/vouchers/receipts', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    });
+  },
+
+  paymentVouchers(token) {
+    return request('/vouchers/payments', { token });
+  },
+
+  createPaymentVoucher(token, payload) {
+    return request('/vouchers/payments', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    });
+  },
+
+  partnerStatement(token, filters) {
+    const params = new URLSearchParams();
+    Object.entries(filters || {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.set(key, value);
+      }
+    });
+    return request(`/reports/partner-statement?${params.toString()}`, { token });
+  },
+
+  profitLoss(token, filters = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.set(key, value);
+      }
+    });
+    const query = params.toString();
+    return request(`/reports/profit-loss${query ? `?${query}` : ''}`, { token });
   },
 
   systemModules() {

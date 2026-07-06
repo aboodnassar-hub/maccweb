@@ -11,6 +11,7 @@ from backend.app.modules.reports.router import router as reports_router
 from backend.app.modules.sales.router import router as sales_router
 from backend.app.modules.system_admin.router import router as system_admin_router
 from backend.app.modules.system.router import router as system_router
+from backend.app.modules.vouchers.router import router as vouchers_router
 
 
 api_router = APIRouter()
@@ -21,6 +22,7 @@ api_router.include_router(parties_router, prefix="/parties", tags=["parties"])
 api_router.include_router(inventory_router, prefix="/inventory", tags=["inventory"])
 api_router.include_router(sales_router, prefix="/sales", tags=["sales"])
 api_router.include_router(purchases_router, prefix="/purchases", tags=["purchases"])
+api_router.include_router(vouchers_router, prefix="/vouchers", tags=["vouchers"])
 api_router.include_router(hr_router, prefix="/hr", tags=["hr"])
 api_router.include_router(reports_router, prefix="/reports", tags=["reports"])
 api_router.include_router(system_router, prefix="/system", tags=["system"])

@@ -104,6 +104,19 @@ export default function TrialBalance({ token }) {
             {balanced ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
             {balanced ? t('common.balanced') : `${t('common.difference')}: ${difference.toFixed(3)}`}
           </div>
+          <div className="mx-5 mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              [t('accounting.accountsShown'), trialBalance.length],
+              [t('common.debit'), totals.debit.toFixed(3)],
+              [t('common.credit'), totals.credit.toFixed(3)],
+              [t('common.difference'), difference.toFixed(3)],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-500">{label}</p>
+                <p className="mt-1 font-mono text-lg font-black text-slate-950" dir="ltr">{value}</p>
+              </div>
+            ))}
+          </div>
           <div className="overflow-x-auto">
             <table className="mt-4 w-full min-w-[720px] text-sm">
               <thead className="bg-slate-50 text-xs uppercase tracking-widest text-slate-500">

@@ -34,8 +34,16 @@ def _dedupe(values: list[str]) -> list[str]:
     return result
 
 
+def _first_env(*names: str) -> str | None:
+    for name in names:
+        value = os.getenv(name)
+        if value:
+            return value
+    return None
+
+
 def _cors_origins(environment: str) -> list[str]:
-    explicit_origins = os.getenv("MACC_ALLOWED_ORIGINS")
+    explicit_origins = _first_env("MACC_ALLOWED_ORIGINS", "CORS_ORIGINS", "ALLOWED_ORIGINS")
     if explicit_origins:
         origins = _csv(explicit_origins)
     else:
@@ -47,6 +55,7 @@ def _cors_origins(environment: str) -> list[str]:
         origins.extend(LOCAL_CORS_ORIGINS)
 
     origins.extend(_csv(os.getenv("MACC_EXTRA_CORS_ORIGINS", "")))
+    origins.extend(_csv(os.getenv("CORS_EXTRA_ORIGINS", "")))
     return _dedupe(origins)
 
 

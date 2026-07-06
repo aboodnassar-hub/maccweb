@@ -1,14 +1,12 @@
 import {
   BarChart3,
-  Boxes,
-  Building2,
-  FileBarChart2,
+  CreditCard,
   FileText,
+  HandCoins,
   LayoutDashboard,
+  Package,
   ReceiptText,
-  Settings,
   ShoppingBag,
-  Truck,
   Users,
 } from 'lucide-react';
 
@@ -21,25 +19,27 @@ export const NAVIGATION_GROUPS = [
     ],
   },
   {
-    titleKey: 'nav.groups.operations',
+    titleKey: 'nav.groups.masters',
+    items: [
+      { id: 'customers', labelKey: 'nav.customers', icon: Users },
+      { id: 'suppliers', labelKey: 'nav.suppliers', icon: Users },
+      { id: 'products', labelKey: 'nav.products', icon: Package },
+    ],
+  },
+  {
+    titleKey: 'nav.groups.transactions',
     items: [
       { id: 'sales', labelKey: 'nav.sales', icon: ReceiptText },
       { id: 'purchases', labelKey: 'nav.purchases', icon: ShoppingBag },
-      { id: 'inventory', labelKey: 'nav.inventory', icon: Boxes },
-      { id: 'partners', labelKey: 'nav.partners', icon: Building2 },
+      { id: 'receipts', labelKey: 'nav.receipts', icon: HandCoins },
+      { id: 'payments', labelKey: 'nav.payments', icon: CreditCard },
     ],
   },
   {
-    titleKey: 'nav.groups.management',
+    titleKey: 'nav.groups.reports',
     items: [
-      { id: 'hr', labelKey: 'nav.hr', icon: Users },
-      { id: 'reports', labelKey: 'nav.reports', icon: FileBarChart2 },
-    ],
-  },
-  {
-    titleKey: 'nav.groups.system',
-    items: [
-      { id: 'settings', labelKey: 'nav.settings', icon: Settings },
+      { id: 'statements', labelKey: 'nav.statements', icon: FileText },
+      { id: 'profitLoss', labelKey: 'nav.profitLoss', icon: BarChart3 },
     ],
   },
 ];
@@ -48,10 +48,12 @@ export const MODULE_ICONS = {
   dashboard: BarChart3,
   accounting: FileText,
   sales: ReceiptText,
-  purchases: Truck,
-  inventory: Boxes,
-  partners: Building2,
-  hr: Users,
-  reports: FileBarChart2,
-  settings: Settings,
+  purchases: ShoppingBag,
+  customers: Users,
+  suppliers: Users,
+  products: Package,
+  receipts: HandCoins,
+  payments: CreditCard,
+  statements: FileText,
+  profitLoss: BarChart3,
 };

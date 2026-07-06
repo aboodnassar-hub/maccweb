@@ -9,8 +9,8 @@ from backend.app.modules.accounting.schemas import JournalEntryCreate, JournalEn
 from backend.app.modules.accounting.service import AccountingError, create_journal_entry, reverse_journal_entry
 from backend.app.modules.inventory.models import Item, StockMovement, Warehouse
 from backend.app.modules.parties.models import BusinessPartner
-from backend.app.modules.sales.models import Invoice, InvoiceLine
-from backend.app.modules.sales.schemas import InvoiceCancel, InvoiceCreate, InvoiceLineCreate, InvoiceOut
+from backend.app.modules.sales.models import Invoice, InvoiceLine, Payment
+from backend.app.modules.sales.schemas import InvoiceCancel, InvoiceCreate, InvoiceLineCreate, InvoiceOut, PaymentCreate, PaymentOut
 
 
 class InvoiceError(ValueError):
@@ -20,6 +20,7 @@ class InvoiceError(ValueError):
 MONEY_QUANT = Decimal("0.0001")
 SALES_PARTNER_TYPES = {"CUSTOMER", "BOTH"}
 PURCHASE_PARTNER_TYPES = {"VENDOR", "SUPPLIER", "BOTH"}
+PAYMENT_TYPES = {"RECEIPT", "PAYMENT"}
 
 
 def _money(value: Decimal | int | str | None) -> Decimal:
@@ -34,6 +35,10 @@ def _invoice_prefix(invoice_type: str) -> str:
     return "SINV" if invoice_type == "SALES" else "PINV"
 
 
+def _payment_prefix(payment_type: str) -> str:
+    return "RV" if payment_type == "RECEIPT" else "PV"
+
+
 def _next_invoice_number(db: Session, company_id: int, invoice_type: str, invoice_date: date) -> str:
     prefix = _invoice_prefix(invoice_type)
     count = (
@@ -42,6 +47,16 @@ def _next_invoice_number(db: Session, company_id: int, invoice_type: str, invoic
         .count()
     )
     return f"{prefix}-{invoice_date:%Y%m%d}-{count + 1:05d}"
+
+
+def _next_payment_number(db: Session, company_id: int, payment_type: str, payment_date: date) -> str:
+    prefix = _payment_prefix(payment_type)
+    count = (
+        db.query(Payment)
+        .filter(Payment.company_id == company_id, Payment.payment_type == payment_type)
+        .count()
+    )
+    return f"{prefix}-{payment_date:%Y%m%d}-{count + 1:05d}"
 
 
 def _get_account(db: Session, company_id: int, code: str) -> Account:
@@ -67,6 +82,31 @@ def _validate_partner(db: Session, company_id: int, partner_id: int, invoice_typ
     if partner_type not in allowed:
         raise InvoiceError("Business partner type is not valid for this invoice")
     return partner
+
+
+def _validate_payment_partner(db: Session, company_id: int, partner_id: int, payment_type: str) -> BusinessPartner:
+    partner = (
+        db.query(BusinessPartner)
+        .filter(BusinessPartner.company_id == company_id, BusinessPartner.id == partner_id)
+        .first()
+    )
+    if not partner or not partner.is_active:
+        raise InvoiceError("Business partner was not found or is inactive")
+
+    partner_type = _normalize(partner.partner_type)
+    allowed = SALES_PARTNER_TYPES if payment_type == "RECEIPT" else PURCHASE_PARTNER_TYPES
+    if partner_type not in allowed:
+        raise InvoiceError("Business partner type is not valid for this voucher")
+    return partner
+
+
+def _validate_cash_bank_account(db: Session, company_id: int, account_id: int | None) -> Account:
+    account = db.get(Account, account_id) if account_id else _get_account(db, company_id, "1111")
+    if not account or account.company_id != company_id or not account.is_active:
+        raise InvoiceError("Cash/bank account was not found or is inactive")
+    if account.is_group or account.account_type != "ASSET":
+        raise InvoiceError("Cash/bank account must be an active asset posting account")
+    return account
 
 
 def _validate_warehouse(db: Session, company_id: int, warehouse_id: int | None) -> Warehouse | None:
@@ -145,6 +185,25 @@ def _invoice_to_out(db: Session, invoice: Invoice) -> InvoiceOut:
     )
 
 
+def _payment_to_out(db: Session, payment: Payment) -> PaymentOut:
+    partner = db.get(BusinessPartner, payment.partner_id) if payment.partner_id else None
+    return PaymentOut(
+        id=payment.id,
+        company_id=payment.company_id,
+        payment_number=payment.payment_number,
+        payment_type=payment.payment_type,
+        partner_id=payment.partner_id,
+        partner_code=partner.code if partner else None,
+        partner_name_en=partner.name_en if partner else None,
+        partner_name_ar=partner.name_ar if partner else None,
+        payment_date=payment.payment_date,
+        amount=payment.amount,
+        cash_bank_account_id=payment.cash_bank_account_id,
+        journal_entry_id=payment.journal_entry_id,
+        notes=payment.notes,
+    )
+
+
 def list_invoices(db: Session, company_id: int, invoice_type: str) -> list[InvoiceOut]:
     rows = (
         db.query(Invoice)
@@ -154,6 +213,20 @@ def list_invoices(db: Session, company_id: int, invoice_type: str) -> list[Invoi
         .all()
     )
     return [_invoice_to_out(db, row) for row in rows]
+
+
+def list_payments(db: Session, company_id: int, payment_type: str) -> list[PaymentOut]:
+    payment_type = _normalize(payment_type)
+    if payment_type not in PAYMENT_TYPES:
+        raise InvoiceError("Unsupported voucher type")
+    rows = (
+        db.query(Payment)
+        .filter(Payment.company_id == company_id, Payment.payment_type == payment_type)
+        .order_by(Payment.payment_date.desc(), Payment.id.desc())
+        .limit(100)
+        .all()
+    )
+    return [_payment_to_out(db, row) for row in rows]
 
 
 def get_invoice(db: Session, company_id: int, invoice_id: int, invoice_type: str) -> InvoiceOut:
@@ -247,6 +320,81 @@ def create_invoice(
     return _invoice_to_out(db, invoice)
 
 
+def _journal_payload_for_payment(db: Session, payment: Payment, partner: BusinessPartner) -> JournalEntryCreate:
+    cash_bank_account = _validate_cash_bank_account(db, payment.company_id, payment.cash_bank_account_id)
+    amount = _money(payment.amount)
+    if payment.payment_type == "RECEIPT":
+        partner_account_id = partner.receivable_account_id or _get_account(db, payment.company_id, "112").id
+        lines = [
+            JournalLineCreate(account_id=cash_bank_account.id, debit=amount, credit=Decimal("0"), description=payment.payment_number),
+            JournalLineCreate(account_id=partner_account_id, debit=Decimal("0"), credit=amount, description=payment.payment_number),
+        ]
+        description = f"Receipt voucher {payment.payment_number}"
+    else:
+        partner_account_id = partner.payable_account_id or _get_account(db, payment.company_id, "211").id
+        lines = [
+            JournalLineCreate(account_id=partner_account_id, debit=amount, credit=Decimal("0"), description=payment.payment_number),
+            JournalLineCreate(account_id=cash_bank_account.id, debit=Decimal("0"), credit=amount, description=payment.payment_number),
+        ]
+        description = f"Payment voucher {payment.payment_number}"
+
+    return JournalEntryCreate(
+        entry_number=f"{payment.payment_type}-{payment.payment_number}",
+        entry_date=payment.payment_date,
+        description=description,
+        reference_doc=payment.payment_number,
+        post=True,
+        lines=lines,
+    )
+
+
+def create_payment(
+    db: Session,
+    company_id: int,
+    payment_type: str,
+    payload: PaymentCreate,
+    created_by_id: int | None,
+) -> PaymentOut:
+    payment_type = _normalize(payment_type)
+    if payment_type not in PAYMENT_TYPES:
+        raise InvoiceError("Unsupported voucher type")
+
+    partner = _validate_payment_partner(db, company_id, payload.partner_id, payment_type)
+    cash_bank_account = _validate_cash_bank_account(db, company_id, payload.cash_bank_account_id)
+    payment_number = (payload.payment_number or _next_payment_number(db, company_id, payment_type, payload.payment_date)).strip()
+    duplicate = (
+        db.query(Payment)
+        .filter(Payment.company_id == company_id, Payment.payment_number == payment_number)
+        .first()
+    )
+    if duplicate:
+        raise InvoiceError("Voucher number already exists")
+
+    payment = Payment(
+        company_id=company_id,
+        payment_number=payment_number,
+        payment_type=payment_type,
+        partner_id=partner.id,
+        payment_date=payload.payment_date,
+        amount=_money(payload.amount),
+        cash_bank_account_id=cash_bank_account.id,
+        notes=(payload.notes or "").strip() or None,
+    )
+
+    try:
+        journal = create_journal_entry(db, company_id, _journal_payload_for_payment(db, payment, partner), created_by_id)
+    except AccountingError as exc:
+        db.rollback()
+        raise InvoiceError(str(exc)) from exc
+
+    journal.source_module = "receipt_voucher" if payment_type == "RECEIPT" else "payment_voucher"
+    payment.journal_entry_id = journal.id
+    db.add(payment)
+    db.commit()
+    db.refresh(payment)
+    return _payment_to_out(db, payment)
+
+
 def _add_amount(bucket: dict[int, Decimal], account_id: int, amount: Decimal) -> None:
     amount = _money(amount)
     if amount:
@@ -275,7 +423,10 @@ def _journal_payload_for_invoice(db: Session, invoice: Invoice) -> JournalEntryC
         inventory_account = _get_account(db, invoice.company_id, "113")
         for line in invoice.lines:
             item = db.get(Item, line.item_id) if line.item_id else None
-            account_id = item.inventory_account_id if item and item.inventory_account_id else inventory_account.id if item else fallback_expense.id
+            if item and item.item_type == "STOCK":
+                account_id = item.inventory_account_id if item.inventory_account_id else inventory_account.id
+            else:
+                account_id = fallback_expense.id
             _add_amount(debit_by_account, account_id, line.net_amount)
         _add_amount(debit_by_account, vat_receivable.id, invoice.tax_total)
         _add_amount(credit_by_account, ap_account_id, invoice.grand_total)
@@ -303,7 +454,8 @@ def _journal_payload_for_invoice(db: Session, invoice: Invoice) -> JournalEntryC
 
 def _create_stock_movements(db: Session, invoice: Invoice, reverse: bool = False) -> None:
     for line in invoice.lines:
-        if not line.item_id:
+        item = db.get(Item, line.item_id) if line.item_id else None
+        if not item or item.item_type != "STOCK":
             continue
         warehouse_id = line.warehouse_id or invoice.warehouse_id
         if not warehouse_id:
@@ -337,7 +489,8 @@ def _create_stock_movements(db: Session, invoice: Invoice, reverse: bool = False
 
 def _ensure_stock_ready(db: Session, invoice: Invoice) -> None:
     for line in invoice.lines:
-        if not line.item_id:
+        item = db.get(Item, line.item_id) if line.item_id else None
+        if not item or item.item_type != "STOCK":
             continue
         warehouse_id = line.warehouse_id or invoice.warehouse_id
         if not warehouse_id:

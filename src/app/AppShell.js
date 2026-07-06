@@ -6,7 +6,10 @@ import Dashboard from '../features/dashboard/Dashboard';
 import AccountingWorkspace from '../features/accounting/AccountingWorkspace';
 import BusinessPartnersWorkspace from '../features/modules/BusinessPartnersWorkspace';
 import InvoiceWorkspace from '../features/modules/InvoiceWorkspace';
-import ModuleWorkspace from '../features/modules/ModuleWorkspace';
+import PartnerStatementWorkspace from '../features/modules/PartnerStatementWorkspace';
+import ProductsServicesWorkspace from '../features/modules/ProductsServicesWorkspace';
+import ProfitLossWorkspace from '../features/modules/ProfitLossWorkspace';
+import VoucherWorkspace from '../features/modules/VoucherWorkspace';
 import SystemAdminPortal from '../features/systemAdmin/SystemAdminPortal';
 import { useI18n } from '../i18n/I18nProvider';
 import { ApiClient } from '../services/api';
@@ -117,7 +120,7 @@ export default function AppShell() {
               {activeModule === 'dashboard' ? t('dashboard.title') : t(activeItem?.labelKey || 'nav.dashboard')}
             </h1>
             <p className="hidden text-xs font-semibold text-slate-500 sm:block">
-              {t('app.company')} · {t('app.financialYear')} · {ApiClient.baseUrl}
+              {t('app.company')} / {t('app.financialYear')}
             </p>
           </div>
 
@@ -150,9 +153,14 @@ export default function AppShell() {
         <main className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
           {activeModule === 'dashboard' && <Dashboard token={user.token} />}
           {activeModule === 'accounting' && <AccountingWorkspace token={user.token} />}
+          {activeModule === 'customers' && <BusinessPartnersWorkspace scope="customers" token={user.token} />}
+          {activeModule === 'suppliers' && <BusinessPartnersWorkspace scope="suppliers" token={user.token} />}
+          {activeModule === 'products' && <ProductsServicesWorkspace token={user.token} />}
           {['sales', 'purchases'].includes(activeModule) && <InvoiceWorkspace moduleId={activeModule} token={user.token} />}
-          {activeModule === 'partners' && <BusinessPartnersWorkspace token={user.token} />}
-          {!['dashboard', 'accounting', 'sales', 'purchases', 'partners'].includes(activeModule) && <ModuleWorkspace moduleId={activeModule} token={user.token} />}
+          {activeModule === 'receipts' && <VoucherWorkspace voucherType="receipt" token={user.token} />}
+          {activeModule === 'payments' && <VoucherWorkspace voucherType="payment" token={user.token} />}
+          {activeModule === 'statements' && <PartnerStatementWorkspace token={user.token} />}
+          {activeModule === 'profitLoss' && <ProfitLossWorkspace token={user.token} />}
         </main>
       </div>
     </div>

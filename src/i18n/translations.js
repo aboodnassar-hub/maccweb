@@ -41,14 +41,21 @@ export const translations = {
     nav: {
       groups: {
         workspace: 'Workspace',
-        operations: 'Operations',
-        management: 'Management',
-        system: 'System',
+        masters: 'Masters',
+        transactions: 'Transactions',
+        reports: 'Reports',
       },
       dashboard: 'Dashboard',
       accounting: 'Accounting',
+      customers: 'Customers',
+      suppliers: 'Suppliers',
+      products: 'Products / Services',
       sales: 'Sales invoices',
       purchases: 'Purchase invoices',
+      receipts: 'Receipt vouchers',
+      payments: 'Payment vouchers',
+      statements: 'Statements',
+      profitLoss: 'Profit & loss',
       inventory: 'Inventory',
       partners: 'Customers & vendors',
       hr: 'HR',
@@ -76,7 +83,7 @@ export const translations = {
       type: 'Type',
       total: 'Total',
       live: 'Live',
-      loading: 'Loading live data...',
+      loading: 'Loading data...',
       empty: 'No records yet',
       inactive: 'Inactive',
       active: 'Active',
@@ -87,7 +94,7 @@ export const translations = {
     },
     dashboard: {
       title: 'Executive dashboard',
-      subtitle: 'Live operating picture across finance, inventory, sales, and people.',
+      subtitle: 'Operating picture across finance, inventory, sales, and people.',
       netCash: 'Net cash position',
       receivables: 'Receivables due',
       inventoryValue: 'Inventory value',
@@ -166,6 +173,30 @@ export const translations = {
       statusOpen: 'Open',
       statusClosed: 'Closed',
       statusLocked: 'Locked',
+      controlCenter: 'Control center',
+      overviewHeadline: 'Close the books with confidence',
+      overviewHelp: 'Review period status, draft journals, account readiness, and trial-balance health before posting operational activity.',
+      readinessChecklist: 'Readiness checklist',
+      readyChart: 'Chart of accounts is ready',
+      readyPeriod: 'Current period is open',
+      readyBalance: 'Trial balance is balanced',
+      readyDrafts: 'Draft journals reviewed',
+      quickActions: 'Quick actions',
+      quickActionsHint: 'Jump directly to the accounting task you need.',
+      actionAccounts: 'Maintain accounts',
+      actionAccountsHint: 'Add posting accounts and keep the hierarchy clean.',
+      actionJournal: 'Create journal entry',
+      actionJournalHint: 'Record manual adjustments with debit and credit lines.',
+      actionTrial: 'Review trial balance',
+      actionTrialHint: 'Check balances by date range or fiscal period.',
+      actionPeriods: 'Manage periods',
+      actionPeriodsHint: 'Open, close, or lock accounting periods.',
+      groupAccounts: 'Group accounts',
+      accountsShown: 'Accounts shown',
+      assets: 'Assets',
+      liabilities: 'Liabilities',
+      revenue: 'Revenue',
+      expenses: 'Expenses',
     },
     invoices: {
       newSales: 'New sales invoice',
@@ -231,6 +262,76 @@ export const translations = {
       allTypes: 'All types',
       allStatuses: 'All statuses',
       searchPlaceholder: 'Search code, name, email, or phone',
+    },
+    customers: {
+      title: 'Customers',
+      subtitle: 'Create and manage customer records used in sales invoices, receipts, and statements.',
+      register: 'Customer register',
+      newCustomer: 'New customer',
+      editCustomer: 'Edit customer',
+    },
+    suppliers: {
+      title: 'Suppliers',
+      subtitle: 'Create and manage supplier records used in purchase invoices, payment vouchers, and statements.',
+      register: 'Supplier register',
+      newSupplier: 'New supplier',
+      editSupplier: 'Edit supplier',
+    },
+    products: {
+      title: 'Products / Services',
+      subtitle: 'Simple product and service master records for sales and purchase invoice lines.',
+      register: 'Product / service register',
+      newItem: 'New product / service',
+      editItem: 'Edit product / service',
+      item: 'Product / service',
+      code: 'Code',
+      service: 'Service',
+      services: 'Services',
+      stock: 'Stock item',
+      stockItems: 'Stock items',
+      unit: 'Unit',
+      salesAccount: 'Sales account',
+      inventoryAccount: 'Inventory account',
+      cogsAccount: 'Cost account',
+      searchPlaceholder: 'Search code or name',
+      saved: 'Product/service saved.',
+      updated: 'Product/service updated.',
+      activated: 'Product/service activated.',
+      deactivated: 'Product/service deactivated.',
+      deleted: 'Product/service deleted.',
+      confirmDelete: 'Delete this product/service? Records used in invoices cannot be deleted.',
+    },
+    vouchers: {
+      receiptsTitle: 'Receipt vouchers',
+      receiptsSubtitle: 'Record money received from customers and post it against receivables.',
+      paymentsTitle: 'Payment vouchers',
+      paymentsSubtitle: 'Record money paid to suppliers and post it against payables.',
+      newReceipt: 'New receipt voucher',
+      newPayment: 'New payment voucher',
+      register: 'Voucher register',
+      cashAccount: 'Cash / bank account',
+      defaultCash: 'Default cash account',
+      receiptSaved: 'Receipt voucher saved.',
+      paymentSaved: 'Payment voucher saved.',
+      backendNotReady: 'Voucher API is not deployed on the backend yet. Redeploy the Render backend, then refresh this page.',
+      partnerRequired: 'Select a customer or supplier before saving.',
+      cashAccountRequired: 'A cash or bank posting account is required.',
+      partnerAccountRequired: 'The selected partner needs a receivable/payable posting account.',
+    },
+    statements: {
+      title: 'Customer / Supplier Statement',
+      subtitle: 'Review invoices, vouchers, and running balances for a selected customer or supplier.',
+      filters: 'Statement filters',
+      partner: 'Customer or supplier',
+      statement: 'Statement',
+    },
+    profitLoss: {
+      title: 'Basic Profit & Loss',
+      subtitle: 'A simple first-phase profit and loss report based on posted sales and purchase invoices.',
+      report: 'Profit & loss report',
+      revenue: 'Revenue',
+      costOfSales: 'Cost of sales',
+      netProfit: 'Net profit',
     },
     modules: {
       sales: {
@@ -595,3 +696,119 @@ translations.ar.partners = {
 };
 
 translations.ar.common.saving = 'جار الحفظ...';
+translations.ar.common.loading = 'جار تحميل البيانات...';
+translations.ar.dashboard.subtitle = 'صورة تشغيلية للماليات والمخزون والمبيعات والموظفين.';
+
+translations.ar.nav.groups.masters = 'البيانات الأساسية';
+translations.ar.nav.groups.transactions = 'الحركات';
+translations.ar.nav.groups.reports = 'التقارير';
+translations.ar.nav.customers = 'العملاء';
+translations.ar.nav.suppliers = 'الموردون';
+translations.ar.nav.products = 'المنتجات / الخدمات';
+translations.ar.nav.receipts = 'سندات القبض';
+translations.ar.nav.payments = 'سندات الصرف';
+translations.ar.nav.statements = 'كشوف الحساب';
+translations.ar.nav.profitLoss = 'الأرباح والخسائر';
+
+translations.ar.customers = {
+  title: 'العملاء',
+  subtitle: 'إنشاء وإدارة بيانات العملاء المستخدمة في فواتير المبيعات وسندات القبض وكشوف الحساب.',
+  register: 'سجل العملاء',
+  newCustomer: 'عميل جديد',
+  editCustomer: 'تعديل العميل',
+};
+
+translations.ar.suppliers = {
+  title: 'الموردون',
+  subtitle: 'إنشاء وإدارة بيانات الموردين المستخدمة في فواتير المشتريات وسندات الصرف وكشوف الحساب.',
+  register: 'سجل الموردين',
+  newSupplier: 'مورد جديد',
+  editSupplier: 'تعديل المورد',
+};
+
+translations.ar.products = {
+  title: 'المنتجات / الخدمات',
+  subtitle: 'بيانات بسيطة للمنتجات والخدمات المستخدمة في أسطر فواتير المبيعات والمشتريات.',
+  register: 'سجل المنتجات والخدمات',
+  newItem: 'منتج / خدمة جديدة',
+  editItem: 'تعديل المنتج / الخدمة',
+  item: 'المنتج / الخدمة',
+  code: 'الرمز',
+  service: 'خدمة',
+  services: 'الخدمات',
+  stock: 'منتج مخزني',
+  stockItems: 'المنتجات المخزنية',
+  unit: 'الوحدة',
+  salesAccount: 'حساب المبيعات',
+  inventoryAccount: 'حساب المخزون',
+  cogsAccount: 'حساب التكلفة',
+  searchPlaceholder: 'ابحث بالرمز أو الاسم',
+  saved: 'تم حفظ المنتج/الخدمة.',
+  updated: 'تم تحديث المنتج/الخدمة.',
+  activated: 'تم تفعيل المنتج/الخدمة.',
+  deactivated: 'تم تعطيل المنتج/الخدمة.',
+  deleted: 'تم حذف المنتج/الخدمة.',
+  confirmDelete: 'هل تريد حذف هذا المنتج/الخدمة؟ لا يمكن حذف السجلات المستخدمة في الفواتير.',
+};
+
+translations.ar.vouchers = {
+  receiptsTitle: 'سندات القبض',
+  receiptsSubtitle: 'تسجيل المبالغ المقبوضة من العملاء وترحيلها على الذمم المدينة.',
+  paymentsTitle: 'سندات الصرف',
+  paymentsSubtitle: 'تسجيل المبالغ المدفوعة للموردين وترحيلها على الذمم الدائنة.',
+  newReceipt: 'سند قبض جديد',
+  newPayment: 'سند صرف جديد',
+  register: 'سجل السندات',
+  cashAccount: 'حساب النقد / البنك',
+  defaultCash: 'حساب النقد الافتراضي',
+  receiptSaved: 'تم حفظ سند القبض.',
+  paymentSaved: 'تم حفظ سند الصرف.',
+  backendNotReady: 'واجهة السندات غير منشورة على الخادم بعد. أعد نشر Backend على Render ثم حدث الصفحة.',
+  partnerRequired: 'اختر العميل أو المورد قبل الحفظ.',
+  cashAccountRequired: 'يجب تحديد حساب نقد أو بنك للترحيل.',
+  partnerAccountRequired: 'يحتاج الشريك المحدد إلى حساب ذمم مدينة/دائنة للترحيل.',
+};
+
+translations.ar.statements = {
+  title: 'كشف حساب عميل / مورد',
+  subtitle: 'مراجعة الفواتير والسندات والرصيد المتحرك لعميل أو مورد محدد.',
+  filters: 'فلاتر كشف الحساب',
+  partner: 'عميل أو مورد',
+  statement: 'كشف الحساب',
+};
+
+translations.ar.profitLoss = {
+  title: 'الأرباح والخسائر المبسط',
+  subtitle: 'تقرير أرباح وخسائر بسيط للمرحلة الأولى بناء على فواتير المبيعات والمشتريات المرحلة.',
+  report: 'تقرير الأرباح والخسائر',
+  revenue: 'الإيرادات',
+  costOfSales: 'تكلفة المبيعات',
+  netProfit: 'صافي الربح',
+};
+
+Object.assign(translations.ar.accounting, {
+  controlCenter: 'مركز التحكم',
+  overviewHeadline: 'إغلاق الحسابات بثقة',
+  overviewHelp: 'راجع حالة الفترة والقيود المسودة وجاهزية الحسابات وميزان المراجعة قبل ترحيل العمليات.',
+  readinessChecklist: 'قائمة الجاهزية',
+  readyChart: 'دليل الحسابات جاهز',
+  readyPeriod: 'الفترة الحالية مفتوحة',
+  readyBalance: 'ميزان المراجعة متوازن',
+  readyDrafts: 'تمت مراجعة القيود المسودة',
+  quickActions: 'إجراءات سريعة',
+  quickActionsHint: 'انتقل مباشرة إلى المهمة المحاسبية المطلوبة.',
+  actionAccounts: 'إدارة الحسابات',
+  actionAccountsHint: 'أضف حسابات ترحيل وحافظ على هيكل واضح.',
+  actionJournal: 'إنشاء قيد يومية',
+  actionJournalHint: 'سجل التسويات اليدوية بأسطر مدينة ودائنة.',
+  actionTrial: 'مراجعة ميزان المراجعة',
+  actionTrialHint: 'تحقق من الأرصدة حسب التاريخ أو الفترة المالية.',
+  actionPeriods: 'إدارة الفترات',
+  actionPeriodsHint: 'افتح أو أغلق أو اقفل الفترات المحاسبية.',
+  groupAccounts: 'حسابات تجميعية',
+  accountsShown: 'الحسابات المعروضة',
+  assets: 'الأصول',
+  liabilities: 'الخصوم',
+  revenue: 'الإيرادات',
+  expenses: 'المصروفات',
+});

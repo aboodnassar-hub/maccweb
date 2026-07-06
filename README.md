@@ -83,8 +83,9 @@ CORS behavior:
 
 - Production defaults to `https://maccweb.vercel.app`.
 - Development and testing environments automatically allow `http://localhost:3000` and `http://127.0.0.1:3000`.
-- To temporarily test a deployed backend from a local React dev server, set `MACC_ENABLE_LOCAL_CORS=true` on that backend service.
+- To temporarily test a deployed backend from a local React dev server, set `MACC_ENABLE_LOCAL_CORS=true` on that backend service. This adds `http://localhost:3000` and `http://127.0.0.1:3000`.
 - Additional testing origins can be appended with `MACC_EXTRA_CORS_ORIGINS`.
+- `CORS_ORIGINS` and `ALLOWED_ORIGINS` are also accepted as aliases for `MACC_ALLOWED_ORIGINS`.
 
 Public account registration is disabled. New company accounts and their first admin user are created from the System Admin portal. The seed command creates the System Admin login only when `MACC_SYSTEM_ADMIN_PASSWORD` is set.
 

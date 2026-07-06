@@ -73,3 +73,31 @@ class InvoiceOut(BaseModel):
 class InvoiceCancel(BaseModel):
     reason: str | None = Field(default=None, max_length=255)
     reversal_date: date | None = None
+
+
+class PaymentCreate(BaseModel):
+    payment_number: str | None = Field(default=None, max_length=50)
+    partner_id: int
+    payment_date: date
+    amount: Decimal = Field(gt=0)
+    cash_bank_account_id: int | None = None
+    notes: str | None = None
+
+
+class PaymentOut(BaseModel):
+    id: int
+    company_id: int
+    payment_number: str
+    payment_type: str
+    partner_id: int | None
+    partner_code: str | None = None
+    partner_name_en: str | None = None
+    partner_name_ar: str | None = None
+    payment_date: date
+    amount: Decimal
+    cash_bank_account_id: int
+    journal_entry_id: int | None
+    notes: str | None
+
+    class Config:
+        from_attributes = True

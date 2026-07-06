@@ -112,6 +112,18 @@ export default function ChartOfAccounts({ token }) {
   const accountTree = useMemo(() => buildAccountTree(accounts), [accounts]);
   const groupAccounts = useMemo(() => accounts.filter((account) => account.is_group), [accounts]);
   const count = useMemo(() => flatten(accountTree).length, [accountTree]);
+  const accountStats = useMemo(() => {
+    const byType = accounts.reduce((sum, account) => ({
+      ...sum,
+      [account.account_type]: (sum[account.account_type] || 0) + 1,
+    }), {});
+    return {
+      total: accounts.length,
+      groups: accounts.filter((account) => account.is_group).length,
+      posting: accounts.filter((account) => !account.is_group).length,
+      byType,
+    };
+  }, [accounts]);
 
   const loadAccounts = useCallback(() => {
     setIsLoading(true);
@@ -202,6 +214,25 @@ export default function ChartOfAccounts({ token }) {
         </div>
       </div>
 
+      {!isLoading && !error && (
+        <div className="grid gap-3 border-b border-slate-100 p-5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+          {[
+            [t('common.total'), accountStats.total],
+            [t('accounting.groupAccounts'), accountStats.groups],
+            [t('accounting.postingAccounts'), accountStats.posting],
+            [t('accounting.assets'), accountStats.byType.ASSET || 0],
+            [t('accounting.liabilities'), accountStats.byType.LIABILITY || 0],
+            [t('accounting.revenue'), accountStats.byType.REVENUE || 0],
+            [t('accounting.expenses'), accountStats.byType.EXPENSE || 0],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-black uppercase tracking-widest text-slate-500">{label}</p>
+              <p className="mt-1 font-mono text-lg font-black text-slate-950" dir="ltr">{value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {showForm && (
         <form onSubmit={submitAccount} className="border-b border-slate-200 bg-slate-50 p-5">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -236,7 +267,7 @@ export default function ChartOfAccounts({ token }) {
           {message}
         </div>
       )}
-      {isLoading && <div className="p-5 text-sm font-bold text-slate-500">{t('common.loading', 'Loading live data...')}</div>}
+      {isLoading && <div className="p-5 text-sm font-bold text-slate-500">{t('common.loading', 'Loading data...')}</div>}
       {error && (
         <div className="flex items-center gap-2 p-5 text-sm font-bold text-rose-700">
           <AlertCircle size={18} />
