@@ -151,8 +151,52 @@ export const ApiClient = {
     });
   },
 
-  partners(token) {
-    return request('/parties/partners', { token });
+  partners(token, filters = {}) {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.set(key, value);
+      }
+    });
+    const query = params.toString();
+    return request(`/parties/partners${query ? `?${query}` : ''}`, { token });
+  },
+
+  createPartner(token, payload) {
+    return request('/parties/partners', {
+      method: 'POST',
+      token,
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updatePartner(token, partnerId, payload) {
+    return request(`/parties/partners/${partnerId}`, {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify(payload),
+    });
+  },
+
+  activatePartner(token, partnerId) {
+    return request(`/parties/partners/${partnerId}/activate`, {
+      method: 'POST',
+      token,
+    });
+  },
+
+  deactivatePartner(token, partnerId) {
+    return request(`/parties/partners/${partnerId}/deactivate`, {
+      method: 'POST',
+      token,
+    });
+  },
+
+  deletePartner(token, partnerId) {
+    return request(`/parties/partners/${partnerId}`, {
+      method: 'DELETE',
+      token,
+    });
   },
 
   warehouses(token) {

@@ -4,6 +4,7 @@ import { NAVIGATION_GROUPS } from './navigation';
 import AuthScreen from '../features/auth/AuthScreen';
 import Dashboard from '../features/dashboard/Dashboard';
 import AccountingWorkspace from '../features/accounting/AccountingWorkspace';
+import BusinessPartnersWorkspace from '../features/modules/BusinessPartnersWorkspace';
 import InvoiceWorkspace from '../features/modules/InvoiceWorkspace';
 import ModuleWorkspace from '../features/modules/ModuleWorkspace';
 import SystemAdminPortal from '../features/systemAdmin/SystemAdminPortal';
@@ -150,7 +151,8 @@ export default function AppShell() {
           {activeModule === 'dashboard' && <Dashboard token={user.token} />}
           {activeModule === 'accounting' && <AccountingWorkspace token={user.token} />}
           {['sales', 'purchases'].includes(activeModule) && <InvoiceWorkspace moduleId={activeModule} token={user.token} />}
-          {!['dashboard', 'accounting', 'sales', 'purchases'].includes(activeModule) && <ModuleWorkspace moduleId={activeModule} token={user.token} />}
+          {activeModule === 'partners' && <BusinessPartnersWorkspace token={user.token} />}
+          {!['dashboard', 'accounting', 'sales', 'purchases', 'partners'].includes(activeModule) && <ModuleWorkspace moduleId={activeModule} token={user.token} />}
         </main>
       </div>
     </div>
