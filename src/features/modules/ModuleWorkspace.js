@@ -37,9 +37,13 @@ function rowValue(value) {
   return String(value);
 }
 
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
 function mapRows(moduleId, payload, language) {
   if (moduleId === 'sales' || moduleId === 'purchases') {
-    return payload.map((row) => ({
+    return asArray(payload).map((row) => ({
       code: row.invoice_number,
       description: row.invoice_type,
       detail: row.grand_total,
@@ -48,13 +52,13 @@ function mapRows(moduleId, payload, language) {
   }
 
   if (moduleId === 'inventory') {
-    const items = payload.items.map((row) => ({
+    const items = asArray(payload?.items).map((row) => ({
       code: row.sku,
       description: language === 'ar' ? row.name_ar : row.name_en,
       detail: 'Item',
       status: 'active',
     }));
-    const warehouses = payload.warehouses.map((row) => ({
+    const warehouses = asArray(payload?.warehouses).map((row) => ({
       code: row.code,
       description: language === 'ar' ? row.name_ar : row.name_en,
       detail: 'Warehouse',
@@ -64,7 +68,7 @@ function mapRows(moduleId, payload, language) {
   }
 
   if (moduleId === 'partners') {
-    return payload.map((row) => ({
+    return asArray(payload).map((row) => ({
       code: row.code,
       description: language === 'ar' ? row.name_ar : row.name_en,
       detail: row.type,
@@ -73,7 +77,7 @@ function mapRows(moduleId, payload, language) {
   }
 
   if (moduleId === 'hr') {
-    return payload.map((row) => ({
+    return asArray(payload).map((row) => ({
       code: row.employee_number,
       description: language === 'ar' ? row.full_name_ar : row.full_name_en,
       detail: 'Employee',
@@ -82,15 +86,16 @@ function mapRows(moduleId, payload, language) {
   }
 
   if (moduleId === 'reports') {
-    return payload.available_reports.map((row) => ({
+    const trialBalanceRows = asArray(payload?.trial_balance);
+    return asArray(payload?.available_reports).map((row) => ({
       code: row.code,
       description: language === 'ar' ? row.name_ar : row.name_en,
-      detail: `${payload.trial_balance.length} trial balance rows`,
+      detail: `${trialBalanceRows.length} trial balance rows`,
       status: 'active',
     }));
   }
 
-  return payload.map((row) => ({
+  return asArray(payload).map((row) => ({
     code: row.code,
     description: row.status,
     detail: (row.dependencies || []).join(', ') || '-',

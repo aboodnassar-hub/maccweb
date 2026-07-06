@@ -13,14 +13,19 @@ function normalizeErrorDetail(detail) {
 
 async function request(path, options = {}) {
   const { token, headers, ...rest } = options;
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(headers || {}),
-    },
-    ...rest,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(headers || {}),
+      },
+      ...rest,
+    });
+  } catch (error) {
+    throw new Error(`Unable to reach API at ${API_BASE_URL}. ${error.message}`);
+  }
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
